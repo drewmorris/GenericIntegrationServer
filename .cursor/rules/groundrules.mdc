@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+
+This project is attempting to build a multi-tenant integration server that leverages the core logic and connectors from another open source project called Onyx. The Onyx codebase is located in the LegacyCode folder and should only be used as a reference. Some of the files and folders that I believe we will need are placed in the root of this project.
+
+Some rules we need to follow:
+
+1) Any UI/UX will follow Material Design Principles whenever possible
+2) The file [TODO_CleverBrag_Integration](mdc:TODO_CleverBrag_Integration) contains an initial assessment of the project and how to modify it.
+3) All changes should be logged to the [CHANGELOG](mdc:CHANGELOG) file with the date/time as we go.
+4) At every stage, we should be writing and running the relevant unit/integration tests to check if our code additions/modifications are working as we expected after the change.
+
+Ultimately the goal is to create a multi-tenant integration server that is destination-agnostic so that ingestion connectors can be used to push data into any platform that builds an integration connector for this project. The initial target will be CleverBrag which has a REST endpoint for document ingestion. The documentation for CleverBrag is identical to the R2R documentation and can be found at: https://r2r-docs.sciphi.ai/api-and-sdks/introduction

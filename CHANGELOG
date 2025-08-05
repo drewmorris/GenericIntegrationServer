@@ -1,0 +1,43 @@
+## 2025-08-04 (0.1.3)
+- Moved devcontainer to custom Dockerfile (`.devcontainer/Dockerfile`) based on `python:3.11-bullseye`.
+- Dockerfile installs common CLI tools and creates `vscode` user with password-less sudo to ensure VS Code Remote Containers works correctly.
+- `devcontainer.json` now uses the Dockerfile build and removes the empty `features` section.
+
+## 2025-08-04 (0.2.0)
+- Project bootstrap: add Poetry `pyproject.toml`, FastAPI `backend` package with health endpoint, authentication interfaces & stub `DbAuthProvider`.
+- Extracted Onyx connector runtime already available under `connectors/onyx` and linked as editable dependency.
+
+## 2025-08-04 (0.3.0)
+- Added initial database layer using SQLAlchemy async: base, session, and core models (`Organization`, `User`, `UserToken`).
+- Introduced stub `shared_configs.contextvars` to satisfy connector runtime imports without referencing `LegacyCode`.
+
+## 2025-08-04 (0.4.0)
+- Added Pydantic `Settings` for configuration.
+- Implemented secure password hashing utilities.
+- Refactored `DbAuthProvider` to support async Postgres backend while retaining in-memory fallback.
+- Created FastAPI auth routes (`/auth/signup`, `/auth/login`) with request/response schemas.
+- Added database session dependency and mounted routes in main app.
+- New runtime deps: `alembic`, `python-dotenv`.
+
+## 2025-08-04 (0.4.1)
+- Introduced initial pytest suite: `tests/test_health.py` verifies health endpoint; `tests/test_auth.py` covers signup & login using in-memory auth provider via dependency override.
+
+## 2025-08-04 (0.5.0)
+- Added Alembic configuration (`backend/alembic.ini`) and migration environment.
+- Created initial migration `20250804_01_initial.py` with organizations, users, usertokens tables.
+- Updated `TODO_CleverBrag_Integration` with reminder to publish `onyx_connectors` package and update dependency in Phase 2.
+
+## 2025-08-04 (0.6.0)
+- Added Row Level Security (RLS) migration `20250804_02_rls.py` enabling tenant isolation on `user` and `usertoken` tables.
+- Introduced `backend.db.rls.set_current_org` helper and updated `get_db` dependency to set `app.current_org` based on `X-Org-ID` header.
+- Added dependency helpers in `backend/deps.py`.
+- New endpoint `/auth/refresh` issues new token pairs.
+- Tests updated and still green.
+
+## 2025-08-04 (0.7.0)
+- Added Testcontainers-based integration test (`tests/integration/test_rls.py`) that spins up Postgres, runs Alembic migrations, signs up users in two orgs, and verifies RLS isolation.
+- Introduced `testcontainers[postgresql]` dev dependency.
+- Auth provider factory integrated into routes; tests updated accordingly.
+
+## 2025-08-04 (0.8.0)
+- Introduced GitHub Actions workflow `.github/workflows/ci.yml` running Ruff lint, Mypy type checks, unit + integration tests (with Postgres service).
