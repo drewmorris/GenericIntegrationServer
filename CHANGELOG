@@ -44,3 +44,15 @@
 
 ## 2025-08-05 (0.9.0)
 - Phase 2 kick-off: added smoke test ensuring `connectors.onyx` runtime can be imported and subclassed (`tests/test_connector_import.py`).
+
+## 2025-08-05 (0.10.0)
+- Phase 3 kickoff: added Celery orchestrator scaffold (`backend/orchestrator`) with Redis broker, dummy `sync_dummy` task, and `/orchestrator/sync/{profile_id}` endpoint to enqueue a job.
+
+## 2025-08-05 (0.10.1)
+- Added periodic scheduler task `scan_due_profiles` running every minute via Celery beat, enqueuing dummy sync jobs and updating `next_run_at`.
+- Added `interval_minutes` and `next_run_at` fields to `ConnectorProfile` with migration `20250805_01_schedule`.
+- `sync_dummy` and trigger endpoint now carry `org_id` for context.
+
+## 2025-08-05 (0.10.2)
+- ConnectorProfile now linked to User via `user_id`; migration `20250805_02_profile_user`.
+- Scheduler enqueues sync tasks with `user_id` and `organization_id`; `sync_dummy` logs both.

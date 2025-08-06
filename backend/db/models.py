@@ -54,14 +54,17 @@ class UserToken(Base):
 class ConnectorProfile(Base):
     id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    user_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
 
     name: str = Column(String, nullable=False)
     source: str = Column(String, nullable=False)  # eg. "google_drive"
     connector_config: dict | None = Column(JSONB, nullable=True)
-    schedule_cron: str | None = Column(String, nullable=True)
+    interval_minutes: int = Column(Integer, default=60, nullable=False)
+    next_run_at: datetime | None = Column(DateTime, nullable=True)
     created_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     organization = relationship("Organization")
+    user = relationship("User")
 
 
 class SyncStatus(str):

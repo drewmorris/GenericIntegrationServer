@@ -1,0 +1,23 @@
+"""add user_id to connectorprofile
+
+Revision ID: 20250805_02
+Revises: 20250805_01
+Create Date: 2025-08-05
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+revision = "20250805_02"
+down_revision = "20250805_01"
+branch_labels = None
+depends_on = None
+
+def upgrade() -> None:
+    op.add_column("connectorprofile", sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False))
+    op.create_foreign_key(None, "connectorprofile", "user", ["user_id"], ["id"])
+
+
+def downgrade() -> None:
+    op.drop_constraint(None, "connectorprofile", type_="foreignkey")
+    op.drop_column("connectorprofile", "user_id") 
