@@ -77,3 +77,48 @@
 ## 2025-08-07 (0.11.1)
 - Added rich OpenAPI metadata: global description, terms, contact, license.
 - Added `summary` and `description` to Auth, Orchestrator, and Profiles routes to improve Swagger documentation (Phase 4.5).
+
+## 2025-08-07 (0.12.0)
+- Phase 5 kickoff: added `web/` React + Vite scaffold with Material UI, React Router, React Query and Zod dependencies.
+- Basic pages: `Login`, `App` router, entry `main.tsx`; Vite config, tsconfig, package.json.
+- Front-end build scripts (`dev`, `build`, `preview`, `lint`).
+
+## 2025-08-07 (0.12.1)
+- Added basic React auth context, Axios API wrapper with auth header, React Query provider.
+- Implemented Login page using backend `/auth/login`, storing tokens and protecting routes.
+- Created `ProfilesList` page with hook fetching `/profiles` and table display; wired routing.
+
+## 2025-08-07 (0.12.3)
+- Added SyncRuns page and hook to display run history; links from profile name.
+- ProfilesList links to runs; routing extended.
+
+## 2025-08-07 (0.12.4)
+- Added global Snackbar provider (notistack) with helper hook; wrapped application.
+- Profile Wizard shows success toast on creation.
+- Axios response interceptor refreshes access token on 401 or logs out.
+
+## 2025-08-07 (0.12.5)
+- Added TopNav AppBar with organization selector (simple localStorage), logout button, and brand link.
+- Routing now displays navigation bar when authenticated.
+
+## 2025-08-07 (0.12.6)
+- Added ProfileEdit page and update hook; list view now links to edit, routing extended.
+- Snackbar success on update.
+
+## 2025-08-07 (0.12.7)
+- Dashboard now shows total connector profile count via new hook.
+
+## 2025-08-07 (0.12.8)
+- Global Axios error interceptor now shows notistack error snackbars for failed requests.
+
+## 2025-08-07 (0.12.9)
+- Added Vitest configuration and first React unit test (Login heading) with Testing Library.
+- Added MSW, jest-dom dev deps and test script in package.json.
+- Added GitHub Actions workflow `web-ci.yml` running lint, tests, and build for `web/` folder.
+
+## 2025-08-07 (0.12.10)
+- Added Prettier formatting: config `.prettierrc.json`, dev dependency, `format` and `format:check` npm scripts.
+- Web CI workflow now runs Prettier check.
+
+## 2025-08-08 (0.12.11)
+- Added Node.js 20 and npm installation to devcontainer Dockerfile to enable front-end tooling (`web/`).

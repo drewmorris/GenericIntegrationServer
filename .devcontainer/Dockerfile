@@ -13,6 +13,12 @@ RUN apt-get update \
         nano \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js 20 (includes npm) via NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g npm@latest \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create a vscode user with sudo privileges
 ARG USERNAME=vscode
 ARG USER_UID=1000
