@@ -127,6 +127,29 @@ Milestones
 □ CHANGELOG updated
 
 ────────────────────────────────────
+4.5  API Documentation Hardening  (Week 4-5)
+────────────────────────────────────
+Goal
+• Provide rich, accurate, and user-friendly Swagger / OpenAPI documentation for every public endpoint.
+
+Tasks
+• Add `summary=` and `description=` parameters to each `@app.get/post/...` or `@router.<method>` decorator.
+• Ensure all Pydantic request/response models include descriptive docstrings and example payloads.
+• Organise endpoints with meaningful `tags=[...]` (e.g., "Auth", "Orchestrator", "SyncRuns", "Destinations").
+• Populate global FastAPI metadata (`title`, `version`, `terms_of_service`, `contact`, `license_info`).
+• Verify generated spec via `GET /openapi.json` and Swagger-UI renders as expected (`/docs`).
+• Add CI check that fails if `openapi.json` changes without committing the updated file (optional but recommended).
+
+Tests / Verification
+• Unit: a small test that calls `/openapi.json` and asserts presence of each expected path + summary text.
+• Manual QA: Review Swagger UI for completeness and typos.
+
+Milestones
+□ All endpoints display non-empty summaries & descriptions.
+□ Swagger UI self-contained and understandable without external docs.
+□ CHANGELOG updated.
+
+────────────────────────────────────
 5.  Web UI MVP  (Week 5-7)
 ────────────────────────────────────
 Tech
@@ -194,3 +217,5 @@ Post-MVP Note (added 2025-08-04)
   – remove the in-repo `connectors/` directory from the main package list
   – add `onyx-connectors = "^0.1.0"` as a normal Poetry dependency in `pyproject.toml`
   – update CI to install from the private index (or use a `--extra-index-url`) 
+
+- [ ] Phase 4 TODO: Add bulk document batching support to CleverBragDestination for performance after single-doc flow proven. 

@@ -56,3 +56,24 @@
 ## 2025-08-05 (0.10.2)
 - ConnectorProfile now linked to User via `user_id`; migration `20250805_02_profile_user`.
 - Scheduler enqueues sync tasks with `user_id` and `organization_id`; `sync_dummy` logs both.
+
+## 2025-08-07 (0.10.3)
+- Added Phase 4.5 *API Documentation Hardening* to `TODO_CleverBrag_Integration`: enrich `summary` and `description` fields on all FastAPI endpoints, improve global metadata, tag grouping, and Swagger verification tests.
+- No functional code changes yet; roadmap updated to track work.
+
+## 2025-08-07 (0.10.4)
+- Fixed unit test `test_cleverbrag_retry` monkeypatch to accept variable keyword arguments, preventing TypeError and restoring green test suite.
+
+## 2025-08-07 (0.10.5)
+- Added targeted unit-tests to raise coverage (>85%) for:
+  `backend/destinations/csvdump.py`, `backend/destinations/onyx.py`, `backend/deps.py`, `backend/orchestrator/scheduler.py`, `backend/orchestrator/task_utils.py`, and `backend/orchestrator/tasks.py`.
+- New test files: `tests/test_destinations_csvdump.py`, `tests/test_destinations_onyx.py`, `tests/test_deps.py`, `tests/test_scheduler.py`, `tests/test_task_utils.py`, `tests/test_tasks.py`.
+
+## 2025-08-07 (0.11.0)
+- Added CRUD API for ConnectorProfile (list/create/read/update) at `/profiles/*` with Pydantic schemas.
+- New module `backend/schemas/profiles.py`, route `backend/routes/profiles.py`, router registered in `backend/main.py`.
+- Added unit tests `tests/test_profiles.py` with fake in-memory session.
+
+## 2025-08-07 (0.11.1)
+- Added rich OpenAPI metadata: global description, terms, contact, license.
+- Added `summary` and `description` to Auth, Orchestrator, and Profiles routes to improve Swagger documentation (Phase 4.5).

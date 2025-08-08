@@ -8,7 +8,11 @@ from backend.db.models import SyncRun
 router = APIRouter(prefix="/sync_runs", tags=["SyncRuns"])
 
 
-@router.get("/{profile_id}")
+@router.get(
+    "/{profile_id}",
+    summary="List sync runs for profile",
+    description="Return historical sync run rows for the given connector profile (visible to the current org).",
+)
 async def list_runs(profile_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(SyncRun).where(SyncRun.profile_id == profile_id).order_by(SyncRun.started_at.desc()))
     return [run.model_dump() for run in result.scalars().all()] 

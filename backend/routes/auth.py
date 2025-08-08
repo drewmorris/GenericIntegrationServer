@@ -15,7 +15,12 @@ async def _provider(db: AsyncSession = Depends(get_db)):
     return get_auth_provider(db)
 
 
-@router.post("/signup", response_model=TokenResponse)
+@router.post(
+    "/signup",
+    response_model=TokenResponse,
+    summary="User signup",
+    description="Create a new user (and optionally organization) and receive initial access & refresh tokens.",
+)
 async def signup(data: SignupRequest, provider: DbAuthProvider = Depends(_provider)):
     try:
         await provider.signup(data.email, data.password, data.organization)
@@ -25,7 +30,12 @@ async def signup(data: SignupRequest, provider: DbAuthProvider = Depends(_provid
     return TokenResponse(**tokens.__dict__)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="User login",
+    description="Exchange email & password for a fresh access / refresh token pair.",
+)
 async def login(data: LoginRequest, provider: DbAuthProvider = Depends(_provider)):
     try:
         tokens: TokenPair = await provider.login(data.email, data.password)
@@ -34,7 +44,12 @@ async def login(data: LoginRequest, provider: DbAuthProvider = Depends(_provider
     return TokenResponse(**tokens.__dict__)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="Refresh access token",
+    description="Use a valid refresh token to obtain a new access token without re-logging in.",
+)
 async def refresh(data: RefreshRequest, provider: DbAuthProvider = Depends(_provider)):
     try:
         tokens: TokenPair = await provider.refresh(data.refresh_token)
@@ -43,7 +58,12 @@ async def refresh(data: RefreshRequest, provider: DbAuthProvider = Depends(_prov
     return TokenResponse(**tokens.__dict__)
 
 
-@router.post("/logout", status_code=204)
+@router.post(
+    "/logout",
+    status_code=204,
+    summary="Logout (revoke refresh token)",
+    description="Invalidate the given refresh token so it can no longer be used to generate access tokens.",
+)
 async def logout(data: LogoutRequest, provider: DbAuthProvider = Depends(_provider)):
     await provider.revoke(data.refresh_token)
     return 
