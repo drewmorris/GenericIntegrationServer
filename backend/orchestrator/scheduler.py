@@ -8,7 +8,7 @@ from sqlalchemy import select
 from backend.settings import get_settings
 from backend.db.models import ConnectorProfile
 from backend.orchestrator import celery_app
-from backend.orchestrator.tasks import sync_dummy
+from backend.orchestrator.tasks import sync_connector as sync_dummy
 
 settings = get_settings()
 DB_URL = (
@@ -26,14 +26,15 @@ async def scan_due_profiles() -> None:  # noqa: D401
         now = datetime.utcnow()
         result = await session.execute(
             select(ConnectorProfile).where(
-                (ConnectorProfile.next_run_at == None)  # noqa: E711
+                (ConnectorProfile.next_run_at.is_(None))
                 | (ConnectorProfile.next_run_at <= now)
             )
         )
         due_profiles = result.scalars().all()
 
         for profile in due_profiles:
-            sync_dummy.delay(profile.id, str(profile.user_id), str(profile.organization_id))
+            # Schedule the sync task; use .delay so tests can monkey-patch it easily
+            sync_dummy.delay(str(profile.id), str(profile.user_id), str(profile.organization_id))
             profile.next_run_at = now + timedelta(minutes=profile.interval_minutes)
 
         await session.commit() 

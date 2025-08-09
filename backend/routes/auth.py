@@ -6,7 +6,6 @@ from backend.auth.db_provider import DbAuthProvider
 from backend.db.session import get_db
 from backend.auth.schemas import SignupRequest, LoginRequest, TokenResponse, RefreshRequest, LogoutRequest
 from backend.auth.interfaces import TokenPair
-from backend.settings import get_settings
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

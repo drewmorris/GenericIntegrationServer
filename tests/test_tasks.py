@@ -1,5 +1,4 @@
 import uuid
-import pytest
 from types import SimpleNamespace
 
 from backend.orchestrator import tasks as task_mod

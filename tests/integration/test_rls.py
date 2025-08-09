@@ -4,6 +4,16 @@ from sqlalchemy import select
 from alembic import command
 from alembic.config import Config
 
+# Skip if Docker daemon not available, to avoid failing when containers cannot start
+try:
+    import docker  # type: ignore
+
+    docker.from_env().ping()
+except Exception:  # noqa: BLE001
+    import pytest  # ensure avail
+
+    pytest.skip("Docker daemon not available", allow_module_level=True)
+
 from backend.db.rls import set_current_org
 from backend.auth.db_provider import DbAuthProvider
 from backend.db import models  # noqa: F401 ensure models imported
@@ -22,7 +32,7 @@ async def test_rls_isolation() -> None:  # noqa: D401
     pg = PostgresContainer("postgres:15-alpine")
     try:
         pg.start()
-    except Exception as exc:
+    except Exception as exc:  # noqa: F841  (unused var)
         pytest.skip("Docker not available for Testcontainers")
     try:
         sync_url = pg.get_connection_url()

@@ -1,13 +1,22 @@
 // @ts-nocheck
 import { render, screen } from '@testing-library/react';
-import Login from '../pages/Login';
+
 import { BrowserRouter } from 'react-router-dom';
 
+import { AuthProvider } from '../context/AuthContext';
+import { withSnackbar } from '../components/Snackbar';
+
+import Login from '../pages/Login';
+
 it('renders login heading', () => {
-    render(
+  render(
+    withSnackbar(
+      <AuthProvider>
         <BrowserRouter>
-            <Login />
-        </BrowserRouter>,
-    );
-    expect(screen.getByText(/login/i)).toBeInTheDocument();
-}); 
+          <Login />
+        </BrowserRouter>
+      </AuthProvider>,
+    ),
+  );
+  expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument();
+});

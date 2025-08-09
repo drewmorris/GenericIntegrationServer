@@ -14,5 +14,17 @@ router = APIRouter(prefix="/sync_runs", tags=["SyncRuns"])
     description="Return historical sync run rows for the given connector profile (visible to the current org).",
 )
 async def list_runs(profile_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(SyncRun).where(SyncRun.profile_id == profile_id).order_by(SyncRun.started_at.desc()))
-    return [run.model_dump() for run in result.scalars().all()] 
+    result = await db.execute(
+        select(SyncRun).where(SyncRun.profile_id == profile_id).order_by(SyncRun.started_at.desc())
+    )
+    runs = result.scalars().all()
+    return [
+        {
+            "id": str(r.id),
+            "status": r.status,
+            "started_at": r.started_at.isoformat(),
+            "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            "records_synced": r.records_synced,
+        }
+        for r in runs
+    ] 

@@ -15,9 +15,9 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column("connectorprofile", sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False))
-    op.create_foreign_key(None, "connectorprofile", "user", ["user_id"], ["id"])
+    op.create_foreign_key('fk_connectorprofile_user', "connectorprofile", "user", ["user_id"], ["id"])  # type: ignore[call-arg]
 
 
 def downgrade() -> None:
-    op.drop_constraint(None, "connectorprofile", type_="foreignkey")
+    op.drop_constraint('fk_connectorprofile_user', "connectorprofile", type_="foreignkey")
     op.drop_column("connectorprofile", "user_id") 

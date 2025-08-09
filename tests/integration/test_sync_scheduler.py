@@ -4,11 +4,18 @@ from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+# Ensure Docker daemon available, else skip
+try:
+    import docker  # type: ignore
+
+    docker.from_env().ping()
+except Exception:  # noqa: BLE001
+    pytest.skip("Docker daemon not available", allow_module_level=True)
+
 from sqlalchemy import select
 from alembic import command
 from alembic.config import Config
 
-from backend.settings import Settings
 
 # Try importing containers
 try:
@@ -67,7 +74,7 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
             user = m.User(id=os.urandom(16).hex(), organization_id=org.id, email="u@x.com", hashed_pw="x", role="member", created_at=datetime.utcnow())
             sess.add_all([org, user])
             await sess.commit()
-            profile = await _create_profile(sess, org.id, user.id)
+            profile = await _create_profile(sess, org.id, user.id)  # noqa: F841  (unused)
 
         # Import orchestrator AFTER env vars set so Celery picks Redis URL
         from backend.orchestrator import celery_app

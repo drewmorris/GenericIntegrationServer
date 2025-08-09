@@ -7,9 +7,10 @@ from typing import Callable, Awaitable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from backend.db.models import SyncRun, ConnectorProfile
+from backend.db.models import SyncRun
 from backend.db.session import AsyncSessionLocal
 from backend.db.rls import set_current_org
+import inspect
 
 
 async def run_with_syncrow(
@@ -36,7 +37,10 @@ async def run_with_syncrow(
     try:
         async with AsyncSessionLocal() as run_sess:
             await set_current_org(run_sess, org_id)
-            records = await runner(run_sess) if callable(runner) else 0
+            if inspect.iscoroutinefunction(runner):
+                records = await runner(run_sess)
+            else:
+                records = runner(run_sess)
         status = "success"
     except Exception:
         records = 0

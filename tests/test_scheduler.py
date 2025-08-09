@@ -1,5 +1,3 @@
-import sys
-import types
 import importlib
 from types import SimpleNamespace
 
@@ -8,7 +6,6 @@ if not hasattr(real_tasks, "sync_dummy"):
     real_tasks.sync_dummy = SimpleNamespace(delay=lambda *a, **kw: None)
 
 # Now safe to import scheduler
-import asyncio
 from datetime import datetime, timedelta
 
 import pytest

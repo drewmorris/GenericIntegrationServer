@@ -1,5 +1,4 @@
 import uuid
-import asyncio
 from types import SimpleNamespace
 
 import pytest
@@ -7,7 +6,6 @@ from fastapi.testclient import TestClient
 
 from backend.main import app
 from backend.routes import profiles as profiles_router
-from backend.schemas.profiles import ConnectorProfileCreate
 
 
 class _FakeSession:

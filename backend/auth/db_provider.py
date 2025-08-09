@@ -7,14 +7,12 @@ from __future__ import annotations
 
 import uuid
 
-import bcrypt
 from jose import jwt
-from datetime import datetime, timedelta
 from typing import Optional
 
 from backend.auth.interfaces import AuthProvider, TokenPair
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert
+from sqlalchemy import select
 import sqlalchemy as sa
 
 from backend.db.models import User, Organization
@@ -24,7 +22,8 @@ from backend.settings import get_settings
 settings = get_settings()
 
 
-class User:  # Temporary stub – replace with SQLAlchemy model
+# Temporary in-memory user representation for tests
+class SimpleUser:
     id: uuid.UUID
     email: str
     hashed_pw: str
@@ -45,7 +44,7 @@ class DbAuthProvider(AuthProvider):
     def __init__(self, db: AsyncSession | None = None):
         self._db = db
         # fallback memory store
-        self._users: dict[str, User] = {}
+        self._users: dict[str, SimpleUser] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -63,7 +62,6 @@ class DbAuthProvider(AuthProvider):
 
     async def refresh(self, refresh_token: str) -> TokenPair:  # type: ignore[override]
         # refresh flow identical for both stores – we only need to know the email
-        from jose import jwt
         try:
             payload = jwt.decode(refresh_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         except Exception as exc:  # noqa: BLE001
@@ -85,7 +83,6 @@ class DbAuthProvider(AuthProvider):
         if self._db is None:
             return  # noop for in-memory
 
-        from jose import jwt
         from backend.db.models import UserToken
 
         try:
@@ -143,10 +140,8 @@ class DbAuthProvider(AuthProvider):
     async def _signup_in_mem(self, email: str, password: str):
         if email in self._users:
             raise ValueError("User already exists")
-        import types
-
         hashed = hash_password(password)
-        user = types.SimpleNamespace(email=email, hashed_pw=hashed)
+        user = SimpleUser(email=email, hashed_pw=hashed)
         self._users[email] = user
         return user
 

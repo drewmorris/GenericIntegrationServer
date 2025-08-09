@@ -1,127 +1,93 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Comprehensive code-quality script.
+# Usage:
+#   ./check_codebase.sh         # interactive menu (default)
+#   ./check_codebase.sh --ci    # non-interactive, run everything & fail on error
+
+set -euo pipefail
 
 mkdir -p logs
 
 commands=(
-  "ruff check ." \
-  "mypy backend || true" \
-  "python -m pytest -q" \
-  "command -v npm >/dev/null && npm --prefix web run format:check || echo 'npm not found, skipping format check'" \
-  "command -v npm >/dev/null && npm --prefix web run lint --if-present || echo 'npm not found, skipping lint'" \
-  "command -v npm >/dev/null && npm --prefix web run test -- --run || echo 'npm not found, skipping web tests'" \
-  "command -v npm >/dev/null && npm --prefix web run build || echo 'npm not found, skipping web build'"
+  "ruff check ." 
+  "mypy backend" 
+  "python -m pytest -q" 
+  "command -v npm >/dev/null && npm --prefix web run format:check --silent" 
+  "command -v npm >/dev/null && npm --prefix web run lint -- --max-warnings=0" 
+  "command -v npm >/dev/null && npm --prefix web run test -- --run --silent" 
+  "command -v npm >/dev/null && npm --prefix web run build"
 )
 
 labels=(
-  "Ruff Lint (Python)" \
-  "Mypy Type Check" \
-  "Backend Pytests" \
-  "Prettier Format Check (Web)" \
-  "ESLint (Web)" \
-  "Web Unit Tests" \
+  "Ruff Lint (Python)" 
+  "Mypy Type Check" 
+  "Backend Pytests" 
+  "Prettier Format Check (Web)" 
+  "ESLint (Web)" 
+  "Web Unit Tests" 
   "Web Build"
 )
 
-statuses=()
-exit_codes=()
-log_files=()
-
-echo "🔧 Available Steps:"
-for i in "${!labels[@]}"; do
-  printf "%d) %s\n" $((i+1)) "${labels[$i]}"
-done
-
-echo
-echo "📝 Options:"
-echo "  a) Run all"
-echo "  m) Select multiple steps (e.g. 1 3 5)"
-echo
-
-read -rp "👉 Choose an option (number/a/m): " choice
-
-selected_indices=()
-
-if [[ "$choice" == "a" || "$choice" == "A" ]]; then
-  for i in "${!commands[@]}"; do
-    selected_indices+=("$i")
+# Show interactive menu unless --ci supplied
+if [[ "${1:-}" != "--ci" ]]; then
+  echo "🔧 Available Steps:"
+  for idx in "${!labels[@]}"; do
+    printf "%2d) %s\n" "$((idx+1))" "${labels[$idx]}"
   done
-elif [[ "$choice" == "m" || "$choice" == "M" ]]; then
-  read -rp "🔢 Enter step numbers separated by space (e.g. 1 2 4): " -a nums
-  for n in "${nums[@]}"; do
-    index=$((n - 1))
-    if [[ $index -ge 0 && $index -lt ${#commands[@]} ]]; then
-      selected_indices+=("$index")
-    else
-      echo "⚠️ Skipping invalid selection: $n"
-    fi
-  done
-else
-  index=$((choice - 1))
-  if [[ $index -ge 0 && $index -lt ${#commands[@]} ]]; then
-    selected_indices+=("$index")
+  echo -e "\na) Run all\n"
+  read -rp "👉 Choose steps (e.g. 1 3 5 or 'a'): " choice
+  if [[ "$choice" == "a" ]]; then
+    selected_indices=( $(seq 0 $((${#commands[@]}-1))) )
   else
-    echo "❌ Invalid choice. Exiting."
-    exit 1
+    read -ra num <<< "$choice"
+    selected_indices=()
+    for n in "${num[@]}"; do
+      selected_indices+=( $((n-1)) )
+    done
   fi
+else
+  selected_indices=( $(seq 0 $((${#commands[@]}-1))) )
+  echo "▶️  Running all steps in CI mode (non-interactive)"
 fi
 
-# Run and log selected commands
+
+# Run selected commands
+results=()
 for i in "${selected_indices[@]}"; do
   label="${labels[$i]}"
   cmd="${commands[$i]}"
-  log_file="logs/step_${i}_${label// /_}.log"
-  log_files[$i]="$log_file"
+  log="logs/step_${i}_${label// /_}.log"
+  echo -e "\n🔄 $label"
+  echo "   → $cmd"
+  echo "   → log: $log"
 
-  echo "🔄 Running: $label"
-  echo "→ Logging to: $log_file"
+  set +e
+  bash -c "$cmd" 2>&1 | tee "$log"
+  status=$?
+  set -e
 
-  eval "$cmd" 2>&1 | tee "$log_file"
-  code=${PIPESTATUS[0]}
-  
-  if [ $code -eq 0 ]; then
-    statuses[$i]="✅ PASSED"
+# record status
+  if [[ $status -ne 0 ]]; then
+    step_status="❌ FAILED"
   else
-    statuses[$i]="❌ FAILED"
+    step_status="✅ PASSED"
   fi
-
-  exit_codes[$i]=$code
-  echo
+  results+=("$label|$step_status|$status|$log")
+  echo "$step_status"
 done
 
-# Summary
-echo "==================== Summary ===================="
-for i in "${selected_indices[@]}"; do
-  label="${labels[$i]}"
-  status="${statuses[$i]}"
-  log="${log_files[$i]}"
-  code="${exit_codes[$i]}"
-  errors=$(grep -i -E "error|fail" "$log" | wc -l)
-  printf "%-25s %s (exit: %d, ~%d error(s), log: %s)\n" \
-    "$label" "$status" "$code" "$errors" "$log"
+# summary
+echo -e "\n================== Summary =================="
+failures=0
+for entry in "${results[@]}"; do
+  IFS='|' read -r lbl stat code logfile <<< "$entry"
+  printf "%s — %s (exit %s, log: %s)\n" "$lbl" "$stat" "$code" "$logfile"
+  if [[ $code -ne 0 ]]; then failures=1; fi
 done
-echo "================================================="
 
-# Prompt: View errors?
-read -rp "🧐 Do you want to view errors? (y/n): " show_errors
-if [[ "$show_errors" != "y" && "$show_errors" != "Y" ]]; then
-  echo "👋 Exiting without viewing logs."
-  exit 0
+if [[ $failures -ne 0 ]]; then
+  echo "🚨 Some steps failed. See logs above."
+  exit 1
+else
+  echo "🏁 All selected steps completed successfully"
 fi
-
-# Loop through failed sections
-for i in "${selected_indices[@]}"; do
-  if [[ "${statuses[$i]}" == "❌ FAILED" ]]; then
-    label="${labels[$i]}"
-    log="${log_files[$i]}"
-    read -rp "🔍 View log for failed step \"$label\"? (y/n): " view_log
-    if [[ "$view_log" == "y" || "$view_log" == "Y" ]]; then
-      echo "📄 Showing log for $label:"
-      more "$log"
-    else
-      echo "⏭️ Skipping $label"
-    fi
-    echo
-  fi
-done
-
-echo "✅ Done reviewing logs."

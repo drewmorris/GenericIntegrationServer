@@ -122,3 +122,48 @@
 
 ## 2025-08-08 (0.12.11)
 - Added Node.js 20 and npm installation to devcontainer Dockerfile to enable front-end tooling (`web/`).
+
+## 2025-08-08 (0.12.12)
+- Added project-specific `requirements/default.txt` and `requirements/dev.txt` replacing LegacyCode dependency installation.
+- Dockerfile now copies and installs these requirements during build.
+- devcontainer postCreateCommand now installs the project in editable mode (`pip install -e .`).
+
+## 2025-08-08 (0.12.13)
+- Devcontainer improvements:
+  - Added build tools (`build-essential`, `libssl-dev`, `libffi-dev`, `libpq-dev`) and `docker.io` to Dockerfile for Python packages with native extensions and Testcontainers support.
+  - Added `vscode` user to `docker` group and bind-mounted host Docker socket to enable Testcontainers inside container.
+  - Updated `postCreateCommand` to install front-end dependencies via `npm ci --prefix web`.
+
+## 2025-08-08 (0.12.14)
+- Devcontainer build fix: added `gnupg` and `dirmngr` packages so NodeSource script can import GPG key during Node installation.
+
+## 2025-08-08 (0.12.15)
+- Fixed devcontainer build failure: set `build.context` to `..` so Docker build can access `requirements/` directory at workspace root.
+
+## 2025-08-08 (0.12.16)
+- Changed devcontainer `postCreateCommand` from `npm ci` to `npm install` because `web/package-lock.json` does not yet exist.
+
+## 2025-08-08 (0.12.17)
+- Improved `postCreateCommand`: now runs via bash with `set -e`, installs Python package first, then conditionally runs `npm ci` or `npm install` inside `web/`, ensuring proper directory context and early failure on errors.
+
+## 2025-08-09 (0.12.18)
+- Added `email-validator` runtime dependency because Pydantic models rely on it for `EmailStr` validation.
+- Kept `httpx` at ^0.27.0 for compatibility with FastAPI’s pinned Starlette, avoiding TestClient breakage.
+
+## 2025-08-09 (0.12.19)
+- Synced Python requirements: added `httpx==0.27.0` and `email-validator==2.2.0` to `requirements/default.txt` so the devcontainer rebuild installs them automatically.
+
+## 2025-08-09 (0.12.20)
+- Re-enabled strict ESLint rules and fixed remaining lint errors across the web front-end:
+  * Removed duplicate `SnackbarContext` in favour of typed `components/Snackbar.tsx`.
+  * Typed Snackbar helpers, removed `// @ts-nocheck`, replaced undefined returns.
+  * Cleaned `TopNav` unused import, fixed import order warnings.
+  * Added `@types/uuid` devDependency and updated `ProfileWizard` to use typed UUID.
+  * Suppressed false-positive `react/no-unknown-property` on MUI `Typography`.
+- Fixed backend test failure: exported `sync_dummy.delay` from scheduler again so `test_scan_due_profiles` can monkey-patch.
+- All `npm run lint -- --max-warnings=0`, `vitest` and `pytest` now pass cleanly.
+
+## 2025-08-09 (0.12.21)
+- Reinstated strict MyPy configuration with official SQLAlchemy plugin.
+- Removed `sqlalchemy2-stubs` (conflicted with plugin).
+- Fixed Alembic migration typings and env script imports; MyPy now reports zero errors.

@@ -9,7 +9,6 @@ auth_routes = importlib.import_module("backend.routes.auth")
 
 # Create a singleton in-memory provider to persist users across requests
 from backend.auth.db_provider import DbAuthProvider  # type: ignore
-from backend.auth.factory import get_auth_provider
 
 singleton_provider = DbAuthProvider(db=None)  # type: ignore[arg-type]
 

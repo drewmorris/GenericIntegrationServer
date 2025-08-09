@@ -6,10 +6,13 @@ from celery.utils.log import get_task_logger
 import uuid
 from backend.orchestrator import celery_app
 from backend.destinations import get_destination
-from backend.db.session import AsyncSessionLocal
 from backend.db.rls import set_current_org
+from backend.db.session import AsyncSessionLocal as _AsyncSessionLocal
 from sqlalchemy import select
 from backend.db import models as m
+
+# Expose AsyncSessionLocal so tests can monkeypatch it easily
+AsyncSessionLocal = _AsyncSessionLocal  # noqa: N816
 
 # noqa
 from backend.orchestrator.task_utils import run_with_syncrow

@@ -3,18 +3,17 @@ from pydantic import Field
 
 
 class Settings(BaseSettings):
-    jwt_secret: str = Field("CHANGE_ME", validation_alias="JWT_SECRET")
-    jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")
-    access_ttl_minutes: int = Field(15, validation_alias="ACCESS_TTL_MINUTES")
-    refresh_ttl_days: int = Field(30, validation_alias="REFRESH_TTL_DAYS")
+    jwt_secret: str = 'changeme'
+    jwt_algorithm: str = 'HS256'
+    access_ttl_minutes: int = 15
+    refresh_ttl_days: int = 30
+    auth_backend: str = 'db'
 
-    auth_backend: str = Field("db", validation_alias="AUTH_BACKEND")  # db | keycloak
-
-    postgres_host: str = Field("localhost", validation_alias="POSTGRES_HOST")
-    postgres_port: str = Field("5432", validation_alias="POSTGRES_PORT")
-    postgres_user: str = Field("postgres", validation_alias="POSTGRES_USER")
-    postgres_password: str = Field("postgres", validation_alias="POSTGRES_PASSWORD")
-    postgres_db: str = Field("integration_server", validation_alias="POSTGRES_DB")
+    postgres_host: str = 'localhost'
+    postgres_port: int = 5432
+    postgres_user: str = 'user'
+    postgres_password: str = 'password'
+    postgres_db: str = 'integration'
 
     model_config = SettingsConfigDict(env_file=".env")
 

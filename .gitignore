@@ -5,3 +5,8 @@ __pycache__/
 /logs/
 
 LegacyCode/
+
+web/node_modules/
+/web/node_modules/
+
+node_modules/

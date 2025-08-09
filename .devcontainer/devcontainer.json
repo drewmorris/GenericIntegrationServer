@@ -1,9 +1,17 @@
 {
   "name": "Generic Integration Server Dev Container",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "context": ".."
   },
-  "postCreateCommand": "pip install --upgrade pip && pip install -r LegacyCode/backend/requirements/default.txt -r LegacyCode/backend/requirements/dev.txt -r LegacyCode/backend/requirements/ee.txt",
+"postCreateCommand": "
+  pip install -e . \
+  && pip install ruff mypy httpx 'python-jose[cryptography]' types-python-jose \
+  && npm ci --prefix web
+",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
   "customizations": {
     "vscode": {
       "settings": {
@@ -13,7 +21,8 @@
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions"
       ]
     }
   },

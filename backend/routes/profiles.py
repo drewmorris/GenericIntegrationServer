@@ -4,7 +4,7 @@ import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db import models as m
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/profiles", tags=["Profiles"])
 )
 async def list_profiles(db: AsyncSession = Depends(get_db)) -> list[m.ConnectorProfile]:
     res = await db.execute(select(m.ConnectorProfile))
-    return res.scalars().all()
+    return list(res.scalars().all())
 
 
 @router.post(

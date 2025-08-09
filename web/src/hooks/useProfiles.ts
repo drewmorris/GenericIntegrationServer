@@ -1,10 +1,15 @@
-// @ts-nocheck
 import { useQuery } from '@tanstack/react-query';
+
 import { api } from '../lib/api';
 
+import type { ConnectorProfile } from '../types';
+
 export function useProfiles() {
-    return useQuery(['profiles'], async () => {
-        const { data } = await api.get('/profiles');
-        return data as Array<{ id: string; name: string; source: string; interval_minutes: number }>;
-    });
-} 
+  return useQuery<ConnectorProfile[], Error>({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data } = await api.get<ConnectorProfile[]>('/profiles');
+      return data;
+    },
+  });
+}

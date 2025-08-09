@@ -1,11 +1,19 @@
 import os
-import json
 import tempfile
 import time
 from datetime import datetime, timedelta
 
 import pytest
 import httpx
+# Skip when Docker daemon not accessible
+try:
+    import docker  # type: ignore
+
+    _client = docker.from_env()
+    _client.ping()
+except Exception:  # noqa: BLE001
+    pytest.skip("Docker daemon not available", allow_module_level=True)
+
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from alembic import command
@@ -29,7 +37,7 @@ def _run_migrations(sync_url: str) -> None:
 
 async def _bootstrap_objects(sess):
     from backend.db import models as m
-    import uuid, secrets
+    import uuid
 
     org = m.Organization(id=uuid.uuid4(), name="OrgEnd", created_at=datetime.utcnow())
     user = m.User(id=uuid.uuid4(), organization_id=org.id, email="u@end.com", hashed_pw="x", role="member", created_at=datetime.utcnow())

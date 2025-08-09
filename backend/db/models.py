@@ -3,21 +3,21 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Enum as SAEnum, ForeignKey, Integer
+from sqlalchemy import String, DateTime, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from backend.db.base import Base
 
 
 class Organization(Base):
-    id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name: str = Column(String, unique=True, nullable=False)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
-    billing_plan: str | None = Column(String, nullable=True)
-    settings: dict | None = Column(JSONB, nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    billing_plan: Mapped[str | None] = mapped_column(String, nullable=True)
+    settings: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    users = relationship("User", back_populates="organization", cascade="all,delete-orphan")
+    users: Mapped[list["User"]] = relationship(back_populates="organization", cascade="all,delete-orphan")
 
 
 class UserRole(str):  # simple string enum for now
@@ -26,24 +26,24 @@ class UserRole(str):  # simple string enum for now
 
 
 class User(Base):
-    id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
 
-    email: str = Column(String, unique=True, nullable=False, index=True)
-    hashed_pw: str = Column(String, nullable=False)
-    role: str = Column(String, default=UserRole.MEMBER, nullable=False)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    hashed_pw: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, default=UserRole.MEMBER, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    organization = relationship("Organization", back_populates="users")
+    organization: Mapped["Organization"] = relationship(back_populates="users")
 
 
 class UserToken(Base):
-    id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
-    refresh_token_jti: str = Column(String, nullable=False, unique=True)
-    expires_at: datetime = Column(DateTime, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    refresh_token_jti: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
-    created_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 # --------------------------------------------------
@@ -52,19 +52,19 @@ class UserToken(Base):
 
 
 class ConnectorProfile(Base):
-    id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
-    user_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
 
-    name: str = Column(String, nullable=False)
-    source: str = Column(String, nullable=False)  # eg. "google_drive"
-    connector_config: dict | None = Column(JSONB, nullable=True)
-    interval_minutes: int = Column(Integer, default=60, nullable=False)
-    next_run_at: datetime | None = Column(DateTime, nullable=True)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    connector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    interval_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    organization = relationship("Organization")
-    user = relationship("User")
+    organization: Mapped["Organization"] = relationship()
+    user: Mapped["User"] = relationship()
 
 
 class SyncStatus(str):
@@ -75,12 +75,12 @@ class SyncStatus(str):
 
 
 class SyncRun(Base):
-    id: uuid.UUID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    profile_id: uuid.UUID = Column(UUID(as_uuid=True), ForeignKey("connectorprofile.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("connectorprofile.id"), nullable=False)
 
-    started_at: datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
-    finished_at: datetime | None = Column(DateTime, nullable=True)
-    status: str = Column(String, default=SyncStatus.PENDING, nullable=False)
-    records_synced: int | None = Column(Integer, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String, default=SyncStatus.PENDING, nullable=False)
+    records_synced: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    profile = relationship("ConnectorProfile") 
+    profile: Mapped["ConnectorProfile"] = relationship() 
