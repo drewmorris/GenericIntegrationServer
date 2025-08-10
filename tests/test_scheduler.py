@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 real_tasks = importlib.import_module("backend.orchestrator.tasks")
 if not hasattr(real_tasks, "sync_dummy"):
-    real_tasks.sync_dummy = SimpleNamespace(delay=lambda *a, **kw: None)
+    real_tasks.sync_dummy = SimpleNamespace(delay=lambda *a, **kw: None)  # type: ignore[attr-defined]
 
 # Now safe to import scheduler
 from datetime import datetime, timedelta
@@ -56,8 +56,8 @@ async def test_scan_due_profiles(monkeypatch):
     fake_sess = _FakeSession([profile])
     monkeypatch.setattr(sched, "SessionLocal", lambda: fake_sess)
 
-    calls = []
-    monkeypatch.setattr(sched.sync_dummy, "delay", lambda *a, **kw: calls.append(a))
+    calls: list[list[str]] = []
+    monkeypatch.setattr(getattr(sched, "sync_dummy"), "delay", lambda *a, **kw: calls.append(a))  # type: ignore[attr-defined]
 
     await sched.scan_due_profiles()
 

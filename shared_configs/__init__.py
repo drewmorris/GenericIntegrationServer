@@ -7,7 +7,7 @@ __all__ = ["contextvars"]
 from types import ModuleType
 import contextvars as _cv
 
-_context_tenant_id = _cv.ContextVar("tenant_id", default=None)
+_context_tenant_id: _cv.ContextVar[str | None] = _cv.ContextVar("tenant_id", default=None)
 
 
 class _ContextVars(ModuleType):
