@@ -9,8 +9,14 @@ from backend.db.base import Base
 from backend.db import models  # noqa: F401  # ensure models are imported
 from backend.db.session import DATABASE_URL
 
+# Load logging config if present and valid
 config = context.config  # type: ignore[attr-defined]
-fileConfig(config.config_file_name)  # type: ignore[arg-type]
+try:
+    if config.config_file_name:
+        fileConfig(config.config_file_name)  # type: ignore[arg-type]
+except (KeyError, ValueError):
+    # Minimal ini in test may lack [formatters]; skip logging config
+    pass
 
 config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("+asyncpg", ""))
 

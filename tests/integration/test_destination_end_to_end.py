@@ -50,7 +50,12 @@ async def _bootstrap_objects(sess):
 async def test_cleverbrag_and_csv_destinations(monkeypatch):
     with PostgresContainer("postgres:15-alpine") as pg, RedisContainer("redis:7-alpine") as redis:
         sync_pg = pg.get_connection_url()
-        redis_url = redis.get_connection_url()
+        if hasattr(redis, "get_connection_url"):
+            redis_url = redis.get_connection_url()  # type: ignore[attr-defined]
+        else:
+            host = redis.get_container_host_ip()
+            port = redis.get_exposed_port(6379)
+            redis_url = f"redis://{host}:{port}/0"
         os.environ["REDIS_URL"] = redis_url
 
         _run_migrations(sync_pg)
