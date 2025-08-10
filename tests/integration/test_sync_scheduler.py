@@ -83,6 +83,8 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
 
         # Import orchestrator AFTER env vars set so Celery picks Redis URL
         from backend.orchestrator import celery_app
+        celery_app.conf.broker_url = redis_url
+        celery_app.conf.result_backend = redis_url
         from backend.orchestrator.scheduler import scan_due_profiles
         from backend.db.models import SyncRun
 
@@ -92,6 +94,12 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         def _worker():
             import os as _os
             _os.environ["REDIS_URL"] = redis_url
+            try:
+                from backend.orchestrator import celery_app as _cel
+                _cel.conf.broker_url = redis_url
+                _cel.conf.result_backend = redis_url
+            except Exception:
+                pass
             celery_app.worker_main([
                 "worker",
                 "--concurrency",

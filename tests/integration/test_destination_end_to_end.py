@@ -100,6 +100,9 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
 
         # start worker proc
         from backend.orchestrator import celery_app
+        # Ensure celery app in parent uses container Redis URL
+        celery_app.conf.broker_url = redis_url
+        celery_app.conf.result_backend = redis_url
         from multiprocessing import Process
         from backend.orchestrator.scheduler import scan_due_profiles
         from backend.db.models import SyncRun
@@ -107,6 +110,13 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
         def _worker():
             import os as _os
             _os.environ["REDIS_URL"] = redis_url
+            # Ensure broker/result are set inside child process as well
+            try:
+                from backend.orchestrator import celery_app as _cel
+                _cel.conf.broker_url = redis_url
+                _cel.conf.result_backend = redis_url
+            except Exception:
+                pass
             celery_app.worker_main(["worker", "--concurrency", "1", "--loglevel", "INFO", "-Q", "default"])
 
         p = Process(target=_worker)
