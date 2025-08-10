@@ -18,7 +18,10 @@ except (KeyError, ValueError):
     # Minimal ini in test may lack [formatters]; skip logging config
     pass
 
-config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("+asyncpg", ""))
+# Respect URL provided by external Config (tests); fallback to app DATABASE_URL
+existing_url = config.get_main_option("sqlalchemy.url")
+if not existing_url:
+    config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("+asyncpg", ""))
 
 target_metadata = Base.metadata
 
