@@ -14,18 +14,18 @@ depends_on = None
 
 def upgrade() -> None:
     # enable RLS on usertoken and user tables
-    op.execute("ALTER TABLE user ENABLE ROW LEVEL SECURITY;")
+    op.execute('ALTER TABLE "user" ENABLE ROW LEVEL SECURITY;')
     op.execute(
-        "CREATE POLICY org_isolation ON user USING (organization_id = current_setting('app.current_org')::uuid);"
+        'CREATE POLICY org_isolation ON "user" USING (organization_id = current_setting(\'app.current_org\')::uuid);'
     )
 
     op.execute("ALTER TABLE usertoken ENABLE ROW LEVEL SECURITY;")
     op.execute(
-        "CREATE POLICY org_isolation ON usertoken USING (user_id IN (SELECT id FROM user WHERE organization_id = current_setting('app.current_org')::uuid));"
+        'CREATE POLICY org_isolation ON usertoken USING (user_id IN (SELECT id FROM "user" WHERE organization_id = current_setting(\'app.current_org\')::uuid));'
     )
 
 def downgrade() -> None:
+    op.execute('DROP POLICY IF EXISTS org_isolation ON "user";')
     op.execute("DROP POLICY IF EXISTS org_isolation ON usertoken;")
-    op.execute("DROP POLICY IF EXISTS org_isolation ON user;")
     op.execute("ALTER TABLE usertoken DISABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE user DISABLE ROW LEVEL SECURITY;") 
+    op.execute('ALTER TABLE "user" DISABLE ROW LEVEL SECURITY;') 

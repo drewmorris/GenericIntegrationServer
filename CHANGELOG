@@ -179,9 +179,7 @@
 - Added unit test `test_retry_policy.py` verifying task retry settings.
 - Marked Phase 3 milestone (worker image) complete in TODO.
 
-## 2025-08-09 (0.12.22)
-- Added "Run fix commands" option (key `f`) to `check_codebase.sh` interactive menu. Selecting it opens a sub-menu with:
-  * Ruff auto-fix (`ruff check --fix .`)
-  * Prettier format (`npm --prefix web run format`)
-  * ESLint auto-fix (`npm --prefix web run lint -- --fix`)
-  Users can run all or select specific fixes. CI path unaffected.
+## 2025-08-10 (0.12.24)
+### Fixed
+* CI Postgres migrations failing with `syntax error at or near "user"` by quoting reserved table name in `20250804_02_rls.py` (`"user"`).
+* Testcontainers Redis v4 compatibility: integration tests now build fallback Redis URL when `get_connection_url()` is absent (`tests/integration/test_destination_end_to_end.py`, `tests/integration/test_sync_scheduler.py`).
