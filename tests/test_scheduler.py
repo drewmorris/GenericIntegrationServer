@@ -54,7 +54,10 @@ async def test_scan_due_profiles(monkeypatch):
     )
 
     fake_sess = _FakeSession([profile])
-    monkeypatch.setattr(sched, "SessionLocal", lambda: fake_sess)
+    class _Factory:
+        def __call__(self):
+            return fake_sess
+    monkeypatch.setattr(sched, "_create_session_factory", lambda: _Factory())
 
     calls: list[list[str]] = []
     monkeypatch.setattr(getattr(sched, "sync_dummy"), "delay", lambda *a, **kw: calls.append(a))  # type: ignore[attr-defined]

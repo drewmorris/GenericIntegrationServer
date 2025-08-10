@@ -98,6 +98,19 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
             await sess.commit()
             profile_id = profile.id
 
+        # Set POSTGRES_* for scheduler to use same DB
+        from urllib.parse import urlparse
+        parsed = urlparse(sync_pg)
+        if parsed.hostname:
+            os.environ["POSTGRES_HOST"] = parsed.hostname
+        if parsed.port:
+            os.environ["POSTGRES_PORT"] = str(parsed.port)
+        if parsed.username:
+            os.environ["POSTGRES_USER"] = parsed.username
+        if parsed.password:
+            os.environ["POSTGRES_PASSWORD"] = parsed.password
+        os.environ["POSTGRES_DB"] = (parsed.path or "/integration_server").lstrip("/")
+
         # start worker proc
         from backend.orchestrator import celery_app
         # Use in-memory broker/result to avoid network flakiness under act
@@ -110,11 +123,11 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
             celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
         except Exception:
             pass
-        from backend.orchestrator.scheduler import scan_due_profiles
+        from backend.orchestrator.scheduler import scan_due_profiles_async
         from backend.db.models import SyncRun
         # Run Celery tasks locally (eager) in-process
         celery_app.conf.task_always_eager = True
-        scan_due_profiles.apply()
+        await scan_due_profiles_async()
         # poll up to ~10s for CleverBrag call
         for _ in range(40):
             if len(calls) >= 1:
@@ -150,7 +163,7 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
                 csv_profile_id = profile_csv.id
 
             # Eager execution in-process
-            scan_due_profiles.apply()
+            await scan_due_profiles_async()
             for _ in range(40):
                 if any(os.listdir(tmpdir)):
                     break

@@ -24,6 +24,17 @@ class CsvDumpDestination(DestinationBase):
     async def send(self, *, payload: Iterable[Dict[str, Any]], profile_config: dict[str, Any]) -> None:  # noqa: D401
         for doc in payload:
             ts = datetime.utcnow().strftime("%Y%m%dT%H%M%S%f")
-            file_path = self.dump_dir / f"{doc.get('id', 'doc')}_{ts}.json"
-            file_path.write_text(json.dumps(doc, ensure_ascii=False, indent=2))
+            import uuid, copy
+            def _stringify(obj):  # noqa: D401
+                if isinstance(obj, dict):
+                    return {k: _stringify(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [_stringify(v) for v in obj]
+                if isinstance(obj, uuid.UUID):
+                    return str(obj)
+                return obj
+
+            safe_doc = _stringify(copy.deepcopy(doc))
+            file_path = self.dump_dir / f"{safe_doc.get('id', 'doc')}_{ts}.json"
+            file_path.write_text(json.dumps(safe_doc, ensure_ascii=False, indent=2))
             logger.info("Wrote document to %s", file_path) 

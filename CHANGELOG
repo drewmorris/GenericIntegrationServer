@@ -195,3 +195,13 @@
 
 ## 2025-08-10 (0.12.26)
 - Added `--no-web-checks` flag to `check_codebase.sh`. When used (alone or with `--ci-emulate`), the script skips all web-related steps (Prettier, ESLint, Web Unit Tests, Web Build) to speed up backend-only runs.
+
+## 2025-08-10 (0.12.27)
+### Changed
+* `check_codebase.sh` no longer runs `--gh` (local GitHub Actions via `act`) if any prior selected steps fail; it prints a skip message and exits after the summary. This prevents noisy failures until earlier test issues are resolved.
+
+### Fixed
+* Integration tests flakiness around scheduler DB connection and event loops:
+  - Refactored `backend/orchestrator/scheduler.py` to create a fresh async engine/session factory per invocation, avoiding cross-event-loop issues in CI runners.
+  - `tests/integration/test_destination_end_to_end.py` and `tests/integration/test_sync_scheduler.py` now export `POSTGRES_*` env vars from the Testcontainers Postgres URL before invoking the scheduler, ensuring it connects to the same database as the test session.
+  - When using in-memory broker in tests, call and await `scan_due_profiles_async()` directly instead of Celery `.apply()`/`.apply_async()` to avoid nested event loop errors.

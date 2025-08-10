@@ -83,7 +83,35 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
         await dest.send(payload=docs, profile_config=profile.connector_config or {})
         return len(docs)
 
-    asyncio.run(run_with_syncrow(uuid.UUID(connector_profile_id), uuid.UUID(org_id), uuid.UUID(user_id), _runner))
+    coro = run_with_syncrow(
+        uuid.UUID(connector_profile_id), uuid.UUID(org_id), uuid.UUID(user_id), _runner
+    )
+    try:
+        import asyncio as _asyncio
+        loop = _asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None  # no running loop
+    if loop is None:
+        import asyncio as _asyncio
+        _asyncio.run(coro)
+    else:
+        # We're already inside an event loop (e.g. pytest-asyncio). Run the coroutine in
+        # a dedicated thread so we can await its completion without nesting event loops.
+        import threading, asyncio as _asyncio
+
+        result_holder: list[Exception | None] = [None]
+
+        def _thread_runner():  # noqa: D401
+            try:
+                _asyncio.run(coro)
+            except Exception as exc:  # noqa: BLE001
+                result_holder[0] = exc
+
+        t = threading.Thread(target=_thread_runner, daemon=True)
+        t.start()
+        t.join()
+        if result_holder[0] is not None:
+            raise result_holder[0]
     return "ok"
 
 # Expose Celery retry settings for unit tests

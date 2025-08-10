@@ -81,7 +81,7 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
             await sess.commit()
             profile = await _create_profile(sess, org.id, user.id)  # noqa: F841  (unused)
 
-        # Import orchestrator AFTER env vars set so Celery picks Redis URL
+        # Import orchestrator AFTER env vars set so Celery picks Redis URL and DB settings
         from backend.orchestrator import celery_app
         # Use in-memory broker/result to avoid network flakiness under act
         os.environ["CELERY_BROKER_URL"] = "memory://"
@@ -94,6 +94,18 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         except Exception:
             pass
         from backend.orchestrator.scheduler import scan_due_profiles
+        # Ensure Session settings match the same Postgres in this process
+        from urllib.parse import urlparse
+        parsed = urlparse(sync_pg)
+        if parsed.hostname:
+            os.environ["POSTGRES_HOST"] = parsed.hostname
+        if parsed.port:
+            os.environ["POSTGRES_PORT"] = str(parsed.port)
+        if parsed.username:
+            os.environ["POSTGRES_USER"] = parsed.username
+        if parsed.password:
+            os.environ["POSTGRES_PASSWORD"] = parsed.password
+        os.environ["POSTGRES_DB"] = (parsed.path or "/integration_server").lstrip("/")
         from backend.db.models import SyncRun
 
         # Start worker in background process
@@ -159,7 +171,13 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         worker_proc.start()
         try:
             # Trigger scheduler task and poll for a run record
-            scan_due_profiles.apply_async()
+            import os as _os
+            if _os.environ.get("CELERY_BROKER_URL") == "memory://":
+                # call async directly to avoid apply_async in eager context
+                from backend.orchestrator.scheduler import scan_due_profiles_async as _scan
+                await _scan()
+            else:
+                scan_due_profiles.apply_async()
             for _ in range(40):
                 async with Session() as verify_sess:
                     runs = (await verify_sess.execute(select(SyncRun))).scalars().all()

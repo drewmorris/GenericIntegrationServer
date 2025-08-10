@@ -290,25 +290,33 @@ for i in "${selected_indices[@]}"; do
   echo "$step_status"
 done
 
-# Optional: run GitHub Actions workflow locally
+# Optional: run GitHub Actions workflow locally, but only if all previous steps passed
 if [[ "$RUN_GH" == true ]]; then
-  ensure_act
-  if command -v act >/dev/null; then
-    if [[ "$DOCKER_AVAILABLE" == true ]]; then
-      log "▶️  Running GitHub Actions job locally (act)"
-      # Prefer .actrc if present; otherwise provide sensible defaults
-      if [[ -f .actrc ]]; then
-        act -j build | tee logs/act_build.log || true
+  any_failed=0
+  for entry in "${results[@]}"; do
+    IFS='|' read -r _ _ code _ <<< "$entry"
+    if [[ $code -ne 0 ]]; then any_failed=1; break; fi
+  done
+  if [[ $any_failed -eq 1 ]]; then
+    log "⏭️  Skipping --gh run because one or more previous steps failed"
+  else
+    ensure_act
+    if command -v act >/dev/null; then
+      if [[ "$DOCKER_AVAILABLE" == true ]]; then
+        log "▶️  Running GitHub Actions job locally (act)"
+        if [[ -f .actrc ]]; then
+          act -j build | tee logs/act_build.log || true
+        else
+          act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest \
+            --container-options "--add-host host.docker.internal:host-gateway" \
+            -j build | tee logs/act_build.log || true
+        fi
       else
-        act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest \
-          --container-options "--add-host host.docker.internal:host-gateway" \
-          -j build | tee logs/act_build.log || true
+        log "⚠️  Docker not available; skipping --gh run (act requires Docker)"
       fi
     else
-      log "⚠️  Docker not available; skipping --gh run (act requires Docker)"
+      echo "act not installed; skipping --gh run"
     fi
-  else
-    echo "act not installed; skipping --gh run"
   fi
 fi
 
