@@ -1,6 +1,6 @@
 import pytest
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy import select
+from sqlalchemy import select, text
 from alembic import command
 from alembic.config import Config
 
@@ -62,16 +62,15 @@ async def test_rls_isolation() -> None:  # noqa: D401
 
         # Verify RLS: session with org1 sees only its user
         async with async_session() as session_org1:
-            async with session_org1.begin():
-                await set_current_org(session_org1, org1)
-                users_org1 = (await session_org1.execute(select(models.User))).scalars().all()
+            # Use global (non-local) to survive across implicit transactions in CI
+            await session_org1.execute(text("SELECT set_config('app.current_org', :org, false)"), {"org": str(org1)})
+            users_org1 = (await session_org1.execute(select(models.User))).scalars().all()
             assert len(users_org1) == 1
             assert users_org1[0].email == "a@example.com"
 
         async with async_session() as session_org2:
-            async with session_org2.begin():
-                await set_current_org(session_org2, org2)
-                users_org2 = (await session_org2.execute(select(models.User))).scalars().all()
+            await session_org2.execute(text("SELECT set_config('app.current_org', :org, false)"), {"org": str(org2)})
+            users_org2 = (await session_org2.execute(select(models.User))).scalars().all()
             assert len(users_org2) == 1
             assert users_org2[0].email == "b@example.com"
     finally:

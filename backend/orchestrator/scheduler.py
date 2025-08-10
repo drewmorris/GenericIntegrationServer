@@ -11,18 +11,26 @@ from backend.db.models import ConnectorProfile, SyncRun
 from backend.orchestrator import celery_app
 from backend.orchestrator.tasks import sync_connector as sync_dummy
 
-settings = get_settings()
-DB_URL = (
-    f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@"
-    f"{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
-)
+# Lazily created session factory so env vars set at runtime are honored,
+# and tests can monkeypatch `SessionLocal`.
+SessionLocal = None  # type: ignore[assignment]
 
-engine = create_async_engine(DB_URL, future=True)
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+def _ensure_session_factory():
+    global SessionLocal
+    if SessionLocal is None or not callable(SessionLocal):  # type: ignore[truthy-function]
+        settings = get_settings()
+        db_url = (
+            f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}@"
+            f"{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
+        )
+        engine = create_async_engine(db_url, future=True)
+        SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def _scan_due_profiles_impl() -> None:
-    async with SessionLocal() as session:
+    _ensure_session_factory()
+    async with SessionLocal() as session:  # type: ignore[misc]
         now = datetime.utcnow()
         result = await session.execute(
             select(ConnectorProfile).where(
