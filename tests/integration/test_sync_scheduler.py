@@ -116,6 +116,15 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
                 _cel.conf.broker_url = redis_url
                 _cel.conf.result_backend = redis_url
                 _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
+                _cel.conf.task_ignore_result = True
+            except Exception:
+                pass
+            # Ensure DB schema exists
+            try:
+                from alembic.config import Config as _Cfg
+                from alembic import command as _cmd
+                _cfg = _Cfg("backend/alembic.ini"); _cfg.set_main_option("sqlalchemy.url", sync_pg)
+                _cmd.upgrade(_cfg, "head")
             except Exception:
                 pass
             celery_app.worker_main([
@@ -131,12 +140,9 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         worker_proc = Process(target=_worker)
         worker_proc.start()
         try:
-            # Trigger scheduler task synchronously
-            result = scan_due_profiles.apply_async()
-            result.get(timeout=30)
-
-            # Wait a bit for sync task to finish
-            time.sleep(5)
+            # Trigger scheduler task and give worker time to process without depending on result backend
+            scan_due_profiles.apply_async()
+            time.sleep(8)
 
             async with Session() as verify_sess:
                 runs = (await verify_sess.execute(select(SyncRun))).scalars().all()

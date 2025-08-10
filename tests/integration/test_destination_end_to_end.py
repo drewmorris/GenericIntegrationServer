@@ -133,6 +133,15 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
                 _cel.conf.broker_url = redis_url
                 _cel.conf.result_backend = redis_url
                 _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
+                _cel.conf.task_ignore_result = True
+            except Exception:
+                pass
+            # Run Alembic migrations to ensure tables exist in worker-target DB
+            try:
+                from alembic.config import Config as _Cfg
+                from alembic import command as _cmd
+                _cfg = _Cfg("backend/alembic.ini"); _cfg.set_main_option("sqlalchemy.url", sync_pg)
+                _cmd.upgrade(_cfg, "head")
             except Exception:
                 pass
             celery_app.worker_main(["worker", "--concurrency", "1", "--loglevel", "INFO", "-Q", "default"])
@@ -141,8 +150,7 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
         p.start()
         try:
             res = scan_due_profiles.apply_async()
-            res.get(timeout=30)
-            time.sleep(3)
+            time.sleep(5)
             assert len(calls) == 1
             async with Session() as ver:
                 runs = (await ver.execute(select(SyncRun).where(SyncRun.profile_id == profile_id))).scalars().all()
