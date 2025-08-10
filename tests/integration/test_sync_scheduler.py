@@ -85,6 +85,10 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         from backend.orchestrator import celery_app
         celery_app.conf.broker_url = redis_url
         celery_app.conf.result_backend = redis_url
+        try:
+            celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
+        except Exception:
+            pass
         from backend.orchestrator.scheduler import scan_due_profiles
         from backend.db.models import SyncRun
 
@@ -94,10 +98,24 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         def _worker():
             import os as _os
             _os.environ["REDIS_URL"] = redis_url
+            # parse and pass PG from sync_pg
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(sync_pg)
+                _os.environ["POSTGRES_HOST"] = parsed.hostname or "localhost"
+                _os.environ["POSTGRES_PORT"] = str(parsed.port or 5432)
+                if parsed.username:
+                    _os.environ["POSTGRES_USER"] = parsed.username
+                if parsed.password:
+                    _os.environ["POSTGRES_PASSWORD"] = parsed.password
+                _os.environ["POSTGRES_DB"] = (parsed.path or "/integration_server").lstrip("/")
+            except Exception:
+                pass
             try:
                 from backend.orchestrator import celery_app as _cel
                 _cel.conf.broker_url = redis_url
                 _cel.conf.result_backend = redis_url
+                _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
             except Exception:
                 pass
             celery_app.worker_main([

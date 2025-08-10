@@ -100,9 +100,13 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
 
         # start worker proc
         from backend.orchestrator import celery_app
-        # Ensure celery app in parent uses container Redis URL
+        # Ensure celery app in parent uses container Redis URL and refresh backend
         celery_app.conf.broker_url = redis_url
         celery_app.conf.result_backend = redis_url
+        try:
+            celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
+        except Exception:
+            pass
         from multiprocessing import Process
         from backend.orchestrator.scheduler import scan_due_profiles
         from backend.db.models import SyncRun
@@ -110,11 +114,25 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
         def _worker():
             import os as _os
             _os.environ["REDIS_URL"] = redis_url
+            # Also pass Postgres settings for scheduler engine
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(sync_pg)
+                _os.environ["POSTGRES_HOST"] = parsed.hostname or "localhost"
+                _os.environ["POSTGRES_PORT"] = str(parsed.port or 5432)
+                if parsed.username:
+                    _os.environ["POSTGRES_USER"] = parsed.username
+                if parsed.password:
+                    _os.environ["POSTGRES_PASSWORD"] = parsed.password
+                _os.environ["POSTGRES_DB"] = (parsed.path or "/integration_server").lstrip("/")
+            except Exception:
+                pass
             # Ensure broker/result are set inside child process as well
             try:
                 from backend.orchestrator import celery_app as _cel
                 _cel.conf.broker_url = redis_url
                 _cel.conf.result_backend = redis_url
+                _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
             except Exception:
                 pass
             celery_app.worker_main(["worker", "--concurrency", "1", "--loglevel", "INFO", "-Q", "default"])
