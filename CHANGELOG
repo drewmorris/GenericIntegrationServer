@@ -183,3 +183,4 @@
 ### Fixed
 * CI Postgres migrations failing with `syntax error at or near "user"` by quoting reserved table name in `20250804_02_rls.py` (`"user"`).
 * Testcontainers Redis v4 compatibility: integration tests now build fallback Redis URL when `get_connection_url()` is absent (`tests/integration/test_destination_end_to_end.py`, `tests/integration/test_sync_scheduler.py`).
+* Integration tests now robustly convert sync SQLAlchemy URLs (e.g. `postgresql://` or `postgresql+psycopg2://`) to `postgresql+asyncpg://` using regex to fix CI error loading async engine.

@@ -36,7 +36,8 @@ async def test_rls_isolation() -> None:  # noqa: D401
         pytest.skip("Docker not available for Testcontainers")
     try:
         sync_url = pg.get_connection_url()
-        async_url = sync_url.replace("postgresql://", "postgresql+asyncpg://")
+        import re
+        async_url = re.sub(r"^postgresql(\+[A-Za-z0-9_]+)?://", "postgresql+asyncpg://", sync_url)
 
         # run migrations
         alembic_cfg = Config("backend/alembic.ini")

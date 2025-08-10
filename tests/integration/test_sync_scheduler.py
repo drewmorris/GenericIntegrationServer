@@ -66,7 +66,8 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         os.environ["REDIS_URL"] = redis_url
         _run_migrations(sync_pg)
 
-        async_url = sync_pg.replace("postgresql://", "postgresql+asyncpg://")
+        import re
+        async_url = re.sub(r"^postgresql(\+[A-Za-z0-9_]+)?://", "postgresql+asyncpg://", sync_pg)
         engine = create_async_engine(async_url, future=True)
         Session = async_sessionmaker(engine, expire_on_commit=False)
 
