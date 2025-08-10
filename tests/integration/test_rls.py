@@ -54,6 +54,8 @@ async def test_rls_isolation() -> None:  # noqa: D401
             # Org2 signup
             await provider.signup("b@example.com", "pw123456", org_name="Org2")
             await session.commit()
+            # Clear any previously set org on this connection
+            await session.execute(text("SELECT set_config('app.current_org', NULL, false)"))
 
         # fetch org ids
         async with async_session() as session:

@@ -85,6 +85,7 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         from backend.orchestrator import celery_app
         celery_app.conf.broker_url = redis_url
         celery_app.conf.result_backend = redis_url
+        celery_app.conf.task_ignore_result = True
         try:
             celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
         except Exception:

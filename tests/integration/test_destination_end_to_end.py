@@ -103,6 +103,7 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
         # Ensure celery app in parent uses container Redis URL and refresh backend
         celery_app.conf.broker_url = redis_url
         celery_app.conf.result_backend = redis_url
+        celery_app.conf.task_ignore_result = True
         try:
             celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
         except Exception:
