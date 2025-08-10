@@ -192,3 +192,6 @@
 * Converted scheduler task to sync wrapper with async implementation and added async alias for unit tests, avoiding coroutine serialization and nested event loop errors.
 ### Dev
 * `check_codebase.sh` gains `--ci-emulate` and `--gh`, graceful Docker detection, Alembic smoke migration, and pytest env isolation to better mirror CI locally.
+
+## 2025-08-10 (0.12.26)
+- Added `--no-web-checks` flag to `check_codebase.sh`. When used (alone or with `--ci-emulate`), the script skips all web-related steps (Prettier, ESLint, Web Unit Tests, Web Build) to speed up backend-only runs.

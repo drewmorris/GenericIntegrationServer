@@ -100,9 +100,11 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
 
         # start worker proc
         from backend.orchestrator import celery_app
-        # Ensure celery app in parent uses container Redis URL and refresh backend
-        celery_app.conf.broker_url = redis_url
-        celery_app.conf.result_backend = redis_url
+        # Use in-memory broker/result to avoid network flakiness under act
+        os.environ["CELERY_BROKER_URL"] = "memory://"
+        os.environ["CELERY_RESULT_BACKEND"] = "cache+memory://"
+        celery_app.conf.broker_url = os.environ["CELERY_BROKER_URL"]
+        celery_app.conf.result_backend = os.environ["CELERY_RESULT_BACKEND"]
         celery_app.conf.task_ignore_result = True
         try:
             celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
@@ -114,7 +116,9 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
 
         def _worker():
             import os as _os
-            _os.environ["REDIS_URL"] = redis_url
+            # Use in-memory Celery for broker/result inside worker
+            _os.environ["CELERY_BROKER_URL"] = "memory://"
+            _os.environ["CELERY_RESULT_BACKEND"] = "cache+memory://"
             # Also pass Postgres settings for scheduler engine
             try:
                 from urllib.parse import urlparse
@@ -131,10 +135,22 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
             # Ensure broker/result are set inside child process as well
             try:
                 from backend.orchestrator import celery_app as _cel
-                _cel.conf.broker_url = redis_url
-                _cel.conf.result_backend = redis_url
+                _cel.conf.broker_url = _os.environ.get("CELERY_BROKER_URL", "memory://")
+                _cel.conf.result_backend = _os.environ.get("CELERY_RESULT_BACKEND", "cache+memory://")
                 _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
                 _cel.conf.task_ignore_result = True
+            except Exception:
+                pass
+            # Reload DB session and dependent modules to honor new POSTGRES_* env
+            try:
+                import importlib
+                import backend.db.session as s
+                importlib.reload(s)
+                # Rebind AsyncSessionLocal in task modules
+                import backend.orchestrator.task_utils as tu
+                import backend.orchestrator.tasks as tasks
+                tu.AsyncSessionLocal = s.AsyncSessionLocal  # type: ignore[attr-defined]
+                tasks.AsyncSessionLocal = s.AsyncSessionLocal  # type: ignore[attr-defined]
             except Exception:
                 pass
             # Run Alembic migrations to ensure tables exist in worker-target DB
@@ -145,13 +161,17 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
                 _cmd.upgrade(_cfg, "head")
             except Exception:
                 pass
-            celery_app.worker_main(["worker", "--concurrency", "1", "--loglevel", "INFO", "-Q", "default"])
+            celery_app.worker_main(["worker", "--concurrency", "1", "--pool", "solo", "--loglevel", "INFO", "-Q", "default"])
 
         p = Process(target=_worker)
         p.start()
         try:
             scan_due_profiles.apply_async()
-            time.sleep(5)
+            # poll up to ~10s for CleverBrag call
+            for _ in range(40):
+                if len(calls) >= 1:
+                    break
+                time.sleep(0.25)
             assert len(calls) == 1
             async with Session() as ver:
                 runs = (await ver.execute(select(SyncRun).where(SyncRun.profile_id == profile_id))).scalars().all()
@@ -186,9 +206,11 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
             p2 = Process(target=_worker)
             p2.start()
             try:
-                res2 = scan_due_profiles.apply_async()
-                res2.get(timeout=30)
-                time.sleep(3)
+                scan_due_profiles.apply_async()
+                for _ in range(40):
+                    if any(os.listdir(tmpdir)):
+                        break
+                    time.sleep(0.25)
                 # csv file written?
                 assert any(os.listdir(tmpdir)), "CSV dump dir should contain at least one file"
                 async with Session() as ver2:

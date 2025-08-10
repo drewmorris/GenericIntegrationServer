@@ -1,0 +1,4 @@
+--container-options --add-host host.docker.internal:host-gateway
+--env DOCKER_HOST=tcp://host.docker.internal:2375
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+--container-options --publish 0.0.0.0:55432:5432 

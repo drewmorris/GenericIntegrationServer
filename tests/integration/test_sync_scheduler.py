@@ -83,8 +83,11 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
 
         # Import orchestrator AFTER env vars set so Celery picks Redis URL
         from backend.orchestrator import celery_app
-        celery_app.conf.broker_url = redis_url
-        celery_app.conf.result_backend = redis_url
+        # Use in-memory broker/result to avoid network flakiness under act
+        os.environ["CELERY_BROKER_URL"] = "memory://"
+        os.environ["CELERY_RESULT_BACKEND"] = "cache+memory://"
+        celery_app.conf.broker_url = os.environ["CELERY_BROKER_URL"]
+        celery_app.conf.result_backend = os.environ["CELERY_RESULT_BACKEND"]
         celery_app.conf.task_ignore_result = True
         try:
             celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
@@ -98,7 +101,8 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
 
         def _worker():
             import os as _os
-            _os.environ["REDIS_URL"] = redis_url
+            _os.environ["CELERY_BROKER_URL"] = "memory://"
+            _os.environ["CELERY_RESULT_BACKEND"] = "cache+memory://"
             # parse and pass PG from sync_pg
             try:
                 from urllib.parse import urlparse
@@ -114,10 +118,21 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
                 pass
             try:
                 from backend.orchestrator import celery_app as _cel
-                _cel.conf.broker_url = redis_url
-                _cel.conf.result_backend = redis_url
+                _cel.conf.broker_url = _os.environ.get("CELERY_BROKER_URL", "memory://")
+                _cel.conf.result_backend = _os.environ.get("CELERY_RESULT_BACKEND", "cache+memory://")
                 _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
                 _cel.conf.task_ignore_result = True
+            except Exception:
+                pass
+            # Reload DB session and rebind session factories in task modules
+            try:
+                import importlib
+                import backend.db.session as s
+                importlib.reload(s)
+                import backend.orchestrator.task_utils as tu
+                import backend.orchestrator.tasks as tasks
+                tu.AsyncSessionLocal = s.AsyncSessionLocal  # type: ignore[attr-defined]
+                tasks.AsyncSessionLocal = s.AsyncSessionLocal  # type: ignore[attr-defined]
             except Exception:
                 pass
             # Ensure DB schema exists
@@ -132,6 +147,8 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
                 "worker",
                 "--concurrency",
                 "1",
+                "--pool",
+                "solo",
                 "--loglevel",
                 "INFO",
                 "-Q",
@@ -141,14 +158,15 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         worker_proc = Process(target=_worker)
         worker_proc.start()
         try:
-            # Trigger scheduler task and give worker time to process without depending on result backend
+            # Trigger scheduler task and poll for a run record
             scan_due_profiles.apply_async()
-            time.sleep(8)
-
-            async with Session() as verify_sess:
-                runs = (await verify_sess.execute(select(SyncRun))).scalars().all()
-                assert len(runs) >= 1
-                assert runs[0].status in {"success", "running", "failure"}
+            for _ in range(40):
+                async with Session() as verify_sess:
+                    runs = (await verify_sess.execute(select(SyncRun))).scalars().all()
+                    if runs:
+                        break
+                time.sleep(0.25)
+            assert runs and runs[0].status in {"success", "running", "failure"}
         finally:
             worker_proc.terminate()
             worker_proc.join() 

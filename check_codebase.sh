@@ -14,6 +14,7 @@ mkdir -p logs
 CI_EMULATE=false
 RUN_GH=false
 DOCKER_AVAILABLE=false
+NO_WEB_CHECKS=false
 
 # Parse flags
 for arg in "$@"; do
@@ -23,6 +24,9 @@ for arg in "$@"; do
       ;;
     --gh)
       RUN_GH=true
+      ;;
+    --no-web-checks)
+      NO_WEB_CHECKS=true
       ;;
   esac
 done
@@ -189,6 +193,67 @@ else
   echo "▶️  Running all steps in CI mode (non-interactive)"
 fi
 
+# Optionally filter out web checks
+if [[ "$NO_WEB_CHECKS" == true ]]; then
+  echo "🧪 Skipping web checks due to --no-web-checks"
+  filtered_indices=()
+  for i in "${selected_indices[@]}"; do
+    lbl="${labels[$i]}"
+    if [[ "$lbl" == *"(Web)"* || "$lbl" == Web* ]]; then
+      continue
+    fi
+    filtered_indices+=("$i")
+  done
+  selected_indices=("${filtered_indices[@]}")
+fi
+
+# Helper: try to set DOCKER_HOST when socket is absent
+resolve_docker_host() {
+  if [[ -z "${DOCKER_HOST:-}" && ! -S /var/run/docker.sock ]]; then
+    # Prefer Docker Desktop host alias
+    export DOCKER_HOST=tcp://host.docker.internal:2375
+    # Fallback: try common gateway (Linux)
+    if ! docker info >/dev/null 2>&1; then
+      gw=$(ip route 2>/dev/null | awk '/default/ {print $3; exit}')
+      if [[ -n "$gw" ]]; then
+        export DOCKER_HOST=tcp://$gw:2375
+      fi
+    fi
+  fi
+}
+
+# Helper: ensure act is installed (to ./bin) and on PATH
+ensure_act() {
+  if ! command -v act >/dev/null; then
+    log "ℹ️  'act' not found; attempting local install to ./bin"
+    mkdir -p ./bin
+    if command -v curl >/dev/null; then
+      if curl -fsSL https://raw.githubusercontent.com/nektos/act/master/install.sh | bash >/dev/null 2>&1; then
+        export PATH="$PWD/bin:$PATH"
+        if command -v act >/dev/null; then
+          log "✅ Installed act to ./bin and updated PATH"
+        else
+          log "⚠️  act install script ran but 'act' still not found; please install manually"
+        fi
+      else
+        log "⚠️  Failed to download/install act; please install manually"
+      fi
+    else
+      log "⚠️  curl not available; please install 'act' manually"
+    fi
+  fi
+}
+
+# Detect Docker availability regardless of flags
+resolve_docker_host
+if command -v docker >/dev/null; then
+  if docker info >/dev/null 2>&1; then
+    DOCKER_AVAILABLE=true
+  elif [[ -n "${DOCKER_HOST:-}" ]]; then
+    # If DOCKER_HOST is set, assume available and let downstream commands validate
+    DOCKER_AVAILABLE=true
+  fi
+fi
 
 # Run selected commands
 results=()
@@ -227,10 +292,18 @@ done
 
 # Optional: run GitHub Actions workflow locally
 if [[ "$RUN_GH" == true ]]; then
+  ensure_act
   if command -v act >/dev/null; then
     if [[ "$DOCKER_AVAILABLE" == true ]]; then
       log "▶️  Running GitHub Actions job locally (act)"
-      act -j build --container-privileged | tee logs/act_build.log || true
+      # Prefer .actrc if present; otherwise provide sensible defaults
+      if [[ -f .actrc ]]; then
+        act -j build | tee logs/act_build.log || true
+      else
+        act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest \
+          --container-options "--add-host host.docker.internal:host-gateway" \
+          -j build | tee logs/act_build.log || true
+      fi
     else
       log "⚠️  Docker not available; skipping --gh run (act requires Docker)"
     fi
