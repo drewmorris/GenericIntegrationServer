@@ -74,4 +74,14 @@ access_mod = _ensure("onyx.access.models")
 class ExternalAccess:  # noqa: D401
     def __init__(self, **kwargs: Any) -> None:
         self.__dict__.update(kwargs)
-access_mod.ExternalAccess = ExternalAccess  # type: ignore[attr-defined] 
+access_mod.ExternalAccess = ExternalAccess  # type: ignore[attr-defined]
+
+# onyx.db.enums
+db_mod = _ensure("onyx.db")
+enums_mod = _ensure("onyx.db.enums")
+
+class IndexModelStatus(str):  # noqa: D401
+    PENDING = "pending"
+    COMPLETE = "complete"
+
+enums_mod.IndexModelStatus = IndexModelStatus  # type: ignore[attr-defined] 

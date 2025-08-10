@@ -22,9 +22,13 @@ class _MockTransport(httpx.MockTransport):
                     {
                         "id": "doc1",
                         "raw_text": "hello world",
+                        "sections": [],
+                        "source": "text",
+                        "semantic_identifier": "doc1",
+                        "metadata": {},
                     }
                 ],
-                "checkpoint": {"last_document_id": "doc1"},
+                "checkpoint": {"last_document_id": "doc1", "has_more": False},
                 "failures": [],
             }
         ]
@@ -51,7 +55,7 @@ def test_mock_connector_iteration(mock_connector: MockConnector) -> None:  # noq
     # load credentials (triggers GET request)
     mock_connector.load_credentials({})
 
-    cp = MockConnectorCheckpoint()  # empty checkpoint
+    cp = MockConnectorCheckpoint(last_document_id=None, has_more=False)
 
     docs = list(
         mock_connector.load_from_checkpoint(
@@ -60,4 +64,4 @@ def test_mock_connector_iteration(mock_connector: MockConnector) -> None:  # noq
     )
 
     assert len(docs) == 1
-    assert docs[0].raw_text == "hello world"  # type: ignore[attr-defined] 
+    assert docs[0].model_dump().get("id") == "doc1" 
