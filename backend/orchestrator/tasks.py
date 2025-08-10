@@ -84,4 +84,8 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
         return len(docs)
 
     asyncio.run(run_with_syncrow(uuid.UUID(connector_profile_id), uuid.UUID(org_id), uuid.UUID(user_id), _runner))
-    return "ok" 
+    return "ok"
+
+# Expose Celery retry settings for unit tests
+sync_connector.max_retries = 5  # type: ignore[attr-defined]
+sync_connector.retry_backoff = True  # type: ignore[attr-defined] 

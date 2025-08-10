@@ -34,10 +34,50 @@ if [[ "${1:-}" != "--ci" ]]; then
   for idx in "${!labels[@]}"; do
     printf "%2d) %s\n" "$((idx+1))" "${labels[$idx]}"
   done
-  echo -e "\na) Run all\n"
+  echo -e "\na) Run all"
+  echo -e "f) Run fix commands"
   read -rp "👉 Choose steps (e.g. 1 3 5 or 'a'): " choice
   if [[ "$choice" == "a" ]]; then
     selected_indices=( $(seq 0 $((${#commands[@]}-1))) )
+  elif [[ "$choice" == "f" ]]; then
+    # Show fix sub-menu
+    fix_cmds=(
+      "ruff check --fix ." 
+      "command -v npm >/dev/null && npm --prefix web run format --silent" 
+      "command -v npm >/dev/null && npm --prefix web run lint -- --fix"
+    )
+    fix_labels=(
+      "Ruff Auto-fix (Python)" 
+      "Prettier Format (Web)" 
+      "ESLint --fix (Web)"
+    )
+
+    echo -e "\n🔧 Available Fixes:"
+    for idx in "${!fix_labels[@]}"; do
+      printf "%2d) %s\n" "$((idx+1))" "${fix_labels[$idx]}"
+    done
+    echo -e "\na) Run all fixes\n"
+    read -rp "👉 Choose fixes (e.g. 1 2 or 'a'): " fix_choice
+    if [[ "$fix_choice" == "a" ]]; then
+      selected_fix_indices=( $(seq 0 $((${#fix_cmds[@]}-1))) )
+    else
+      read -ra num <<< "$fix_choice"
+      selected_fix_indices=()
+      for n in "${num[@]}"; do
+        selected_fix_indices+=( $((n-1)) )
+      done
+    fi
+
+    # Execute selected fixes directly and exit
+    for i in "${selected_fix_indices[@]}"; do
+      lbl="${fix_labels[$i]}"
+      cmd="${fix_cmds[$i]}"
+      echo -e "\n🔧 Running $lbl"
+      echo "   → $cmd"
+      bash -c "$cmd"
+    done
+    echo -e "\n🏁 Fix commands completed"
+    exit 0
   else
     read -ra num <<< "$choice"
     selected_indices=()

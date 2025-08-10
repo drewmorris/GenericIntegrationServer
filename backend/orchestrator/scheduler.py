@@ -34,12 +34,13 @@ async def scan_due_profiles() -> None:  # noqa: D401
 
         for profile in due_profiles:
             # skip if a run is already pending/running for this profile
-            existing = await session.execute(
+            existing_res = await session.execute(
                 select(SyncRun).where(
                     (SyncRun.profile_id == profile.id) & (SyncRun.status.in_(["running", "pending"]))
                 )
             )
-            if existing.scalars().first():
+            existing_runs = existing_res.scalars().all()
+            if existing_runs and isinstance(existing_runs[0], SyncRun):
                 continue
             # Schedule the sync task; use .delay so tests can monkey-patch it easily
             sync_dummy.delay(str(profile.id), str(profile.user_id), str(profile.organization_id))

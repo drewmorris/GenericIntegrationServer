@@ -56,10 +56,11 @@ def test_sync_connector_task(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: 
     )
 
     # Fake session
-    fake_session_factory = lambda: _FakeSession(profile)
-    monkeypatch.setattr(orchestrator_tasks, "AsyncSessionLocal", fake_session_factory)
+    def _fake_session_factory():  # noqa: D401
+        return _FakeSession(profile)
+    monkeypatch.setattr(orchestrator_tasks, "AsyncSessionLocal", _fake_session_factory)
     import backend.db.session as _db_sess
-    monkeypatch.setattr(_db_sess, "AsyncSessionLocal", fake_session_factory)
+    monkeypatch.setattr(_db_sess, "AsyncSessionLocal", _fake_session_factory)
 
     # No-op the RLS helper to avoid executing SQL
     import backend.db.rls as _rls
@@ -67,7 +68,7 @@ def test_sync_connector_task(monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: 
         return None
     monkeypatch.setattr(_rls, "set_current_org", _noop_set_current_org)
     import backend.orchestrator.task_utils as _tu
-    monkeypatch.setattr(_tu, "AsyncSessionLocal", fake_session_factory)
+    monkeypatch.setattr(_tu, "AsyncSessionLocal", _fake_session_factory)
     monkeypatch.setattr(_tu, "set_current_org", _noop_set_current_org)
 
     # Fake destination registry

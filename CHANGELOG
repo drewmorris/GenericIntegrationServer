@@ -178,3 +178,10 @@
 - Added Celery worker Docker image (`worker/Dockerfile`) and GitHub Actions workflow `worker.yml` to build/test/push image.
 - Added unit test `test_retry_policy.py` verifying task retry settings.
 - Marked Phase 3 milestone (worker image) complete in TODO.
+
+## 2025-08-09 (0.12.22)
+- Added "Run fix commands" option (key `f`) to `check_codebase.sh` interactive menu. Selecting it opens a sub-menu with:
+  * Ruff auto-fix (`ruff check --fix .`)
+  * Prettier format (`npm --prefix web run format`)
+  * ESLint auto-fix (`npm --prefix web run lint -- --fix`)
+  Users can run all or select specific fixes. CI path unaffected.
