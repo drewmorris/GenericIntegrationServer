@@ -110,74 +110,20 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
             celery_app.backend = celery_app._get_backend()  # type: ignore[attr-defined]
         except Exception:
             pass
-        from multiprocessing import Process
         from backend.orchestrator.scheduler import scan_due_profiles
         from backend.db.models import SyncRun
-
-        def _worker():
-            import os as _os
-            # Use in-memory Celery for broker/result inside worker
-            _os.environ["CELERY_BROKER_URL"] = "memory://"
-            _os.environ["CELERY_RESULT_BACKEND"] = "cache+memory://"
-            # Also pass Postgres settings for scheduler engine
-            try:
-                from urllib.parse import urlparse
-                parsed = urlparse(sync_pg)
-                _os.environ["POSTGRES_HOST"] = parsed.hostname or "localhost"
-                _os.environ["POSTGRES_PORT"] = str(parsed.port or 5432)
-                if parsed.username:
-                    _os.environ["POSTGRES_USER"] = parsed.username
-                if parsed.password:
-                    _os.environ["POSTGRES_PASSWORD"] = parsed.password
-                _os.environ["POSTGRES_DB"] = (parsed.path or "/integration_server").lstrip("/")
-            except Exception:
-                pass
-            # Ensure broker/result are set inside child process as well
-            try:
-                from backend.orchestrator import celery_app as _cel
-                _cel.conf.broker_url = _os.environ.get("CELERY_BROKER_URL", "memory://")
-                _cel.conf.result_backend = _os.environ.get("CELERY_RESULT_BACKEND", "cache+memory://")
-                _cel.backend = _cel._get_backend()  # type: ignore[attr-defined]
-                _cel.conf.task_ignore_result = True
-            except Exception:
-                pass
-            # Reload DB session and dependent modules to honor new POSTGRES_* env
-            try:
-                import importlib
-                import backend.db.session as s
-                importlib.reload(s)
-                # Rebind AsyncSessionLocal in task modules
-                import backend.orchestrator.task_utils as tu
-                import backend.orchestrator.tasks as tasks
-                tu.AsyncSessionLocal = s.AsyncSessionLocal  # type: ignore[attr-defined]
-                tasks.AsyncSessionLocal = s.AsyncSessionLocal  # type: ignore[attr-defined]
-            except Exception:
-                pass
-            # Run Alembic migrations to ensure tables exist in worker-target DB
-            try:
-                from alembic.config import Config as _Cfg
-                from alembic import command as _cmd
-                _cfg = _Cfg("backend/alembic.ini"); _cfg.set_main_option("sqlalchemy.url", sync_pg)
-                _cmd.upgrade(_cfg, "head")
-            except Exception:
-                pass
-            celery_app.worker_main(["worker", "--concurrency", "1", "--pool", "solo", "--loglevel", "INFO", "-Q", "default"])
-
-        p = Process(target=_worker)
-        p.start()
-        try:
-            scan_due_profiles.apply_async()
-            # poll up to ~10s for CleverBrag call
-            for _ in range(40):
-                if len(calls) >= 1:
-                    break
-                time.sleep(0.25)
-            assert len(calls) == 1
-            async with Session() as ver:
-                runs = (await ver.execute(select(SyncRun).where(SyncRun.profile_id == profile_id))).scalars().all()
-                assert runs and runs[0].status == "success"
-        finally:
-            p.terminate(); p.join()
+        # Run Celery tasks locally (eager) in-process
+        celery_app.conf.task_always_eager = True
+        scan_due_profiles.apply()
+        # poll up to ~10s for CleverBrag call
+        for _ in range(40):
+            if len(calls) >= 1:
+                break
+            time.sleep(0.25)
+        assert len(calls) == 1
+        async with Session() as ver:
+            runs = (await ver.execute(select(SyncRun).where(SyncRun.profile_id == profile_id))).scalars().all()
+            assert runs and runs[0].status == "success"
 
         # --------------------------------------------------
         # CSV dump destination test
@@ -203,18 +149,13 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
                 await sess.commit()
                 csv_profile_id = profile_csv.id
 
-            p2 = Process(target=_worker)
-            p2.start()
-            try:
-                scan_due_profiles.apply_async()
-                for _ in range(40):
-                    if any(os.listdir(tmpdir)):
-                        break
-                    time.sleep(0.25)
-                # csv file written?
-                assert any(os.listdir(tmpdir)), "CSV dump dir should contain at least one file"
-                async with Session() as ver2:
-                    runs = (await ver2.execute(select(SyncRun).where(SyncRun.profile_id == csv_profile_id))).scalars().all()
-                    assert runs and runs[0].status == "success"
-            finally:
-                p2.terminate(); p2.join() 
+            # Eager execution in-process
+            scan_due_profiles.apply()
+            for _ in range(40):
+                if any(os.listdir(tmpdir)):
+                    break
+                time.sleep(0.25)
+            assert any(os.listdir(tmpdir)), "CSV dump dir should contain at least one file"
+            async with Session() as ver2:
+                runs = (await ver2.execute(select(SyncRun).where(SyncRun.profile_id == csv_profile_id))).scalars().all()
+                assert runs and runs[0].status == "success" 
