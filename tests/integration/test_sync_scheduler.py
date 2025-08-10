@@ -90,6 +90,8 @@ async def test_scheduler_enqueues_and_creates_sync_run():  # noqa: D401
         from multiprocessing import Process
 
         def _worker():
+            import os as _os
+            _os.environ["REDIS_URL"] = redis_url
             celery_app.worker_main([
                 "worker",
                 "--concurrency",

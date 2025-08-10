@@ -105,6 +105,8 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
         from backend.db.models import SyncRun
 
         def _worker():
+            import os as _os
+            _os.environ["REDIS_URL"] = redis_url
             celery_app.worker_main(["worker", "--concurrency", "1", "--loglevel", "INFO", "-Q", "default"])
 
         p = Process(target=_worker)
