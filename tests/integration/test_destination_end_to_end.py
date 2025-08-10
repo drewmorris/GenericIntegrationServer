@@ -149,7 +149,7 @@ async def test_cleverbrag_and_csv_destinations(monkeypatch):
         p = Process(target=_worker)
         p.start()
         try:
-            res = scan_due_profiles.apply_async()
+            scan_due_profiles.apply_async()
             time.sleep(5)
             assert len(calls) == 1
             async with Session() as ver:
