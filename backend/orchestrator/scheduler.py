@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+import asyncio
 from sqlalchemy import select
 
 from backend.settings import get_settings
@@ -20,8 +21,7 @@ engine = create_async_engine(DB_URL, future=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
-@celery_app.task(name="orchestrator.scan_due_profiles")
-async def scan_due_profiles() -> None:  # noqa: D401
+async def _scan_due_profiles_impl() -> None:
     async with SessionLocal() as session:
         now = datetime.utcnow()
         result = await session.execute(
@@ -33,7 +33,6 @@ async def scan_due_profiles() -> None:  # noqa: D401
         due_profiles = result.scalars().all()
 
         for profile in due_profiles:
-            # skip if a run is already pending/running for this profile
             existing_res = await session.execute(
                 select(SyncRun).where(
                     (SyncRun.profile_id == profile.id) & (SyncRun.status.in_(["running", "pending"]))
@@ -42,8 +41,16 @@ async def scan_due_profiles() -> None:  # noqa: D401
             existing_runs = existing_res.scalars().all()
             if existing_runs and isinstance(existing_runs[0], SyncRun):
                 continue
-            # Schedule the sync task; use .delay so tests can monkey-patch it easily
             sync_dummy.delay(str(profile.id), str(profile.user_id), str(profile.organization_id))
             profile.next_run_at = now + timedelta(minutes=profile.interval_minutes)
 
-        await session.commit() 
+        await session.commit()
+
+
+@celery_app.task(name="orchestrator.scan_due_profiles")
+def scan_due_profiles() -> None:  # noqa: D401
+    asyncio.run(_scan_due_profiles_impl())
+
+# Async alias used by unit tests that run inside an event loop
+async def scan_due_profiles_async() -> None:
+    await _scan_due_profiles_impl() 

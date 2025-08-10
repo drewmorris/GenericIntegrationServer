@@ -62,14 +62,16 @@ async def test_rls_isolation() -> None:  # noqa: D401
 
         # Verify RLS: session with org1 sees only its user
         async with async_session() as session_org1:
-            await set_current_org(session_org1, org1)
-            users_org1 = (await session_org1.execute(select(models.User))).scalars().all()
+            async with session_org1.begin():
+                await set_current_org(session_org1, org1)
+                users_org1 = (await session_org1.execute(select(models.User))).scalars().all()
             assert len(users_org1) == 1
             assert users_org1[0].email == "a@example.com"
 
         async with async_session() as session_org2:
-            await set_current_org(session_org2, org2)
-            users_org2 = (await session_org2.execute(select(models.User))).scalars().all()
+            async with session_org2.begin():
+                await set_current_org(session_org2, org2)
+                users_org2 = (await session_org2.execute(select(models.User))).scalars().all()
             assert len(users_org2) == 1
             assert users_org2[0].email == "b@example.com"
     finally:

@@ -59,7 +59,7 @@ async def test_scan_due_profiles(monkeypatch):
     calls: list[list[str]] = []
     monkeypatch.setattr(getattr(sched, "sync_dummy"), "delay", lambda *a, **kw: calls.append(a))  # type: ignore[attr-defined]
 
-    await sched.scan_due_profiles()
+    await sched.scan_due_profiles_async()
 
     # ensure task enqueued and profile next_run_at moved forward
     assert calls and calls[0][0] == "prof1"
