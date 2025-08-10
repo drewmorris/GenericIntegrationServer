@@ -210,3 +210,10 @@
 ### Changed
 * `start_core_services.sh` now runs Postgres without binding the container port to the host, avoiding collisions when 5432 is already in use.
 * The script detects the container's internal IP and exports it via `POSTGRES_HOST`; `POSTGRES_PORT` is fixed at 5432. Alembic migrations are now executed against this IP, fully eliminating `connection refused` errors during startup.
+### Added
+* `run.sh` now accepts `start` (alias of `dev`) and usage message lists all valid commands (`start|dev|prod|stop`).
+
+## 2025-08-10 (0.12.29)
+### Changed
+* `run.sh` now automatically invokes `start_core_services.sh` before launching backend, Celery, and web dev/prod servers, ensuring Postgres and Redis are available and avoiding connection errors.
+* It detects the Redis container IP and exports `REDIS_URL`, `CELERY_BROKER_URL`, and `CELERY_RESULT_BACKEND` so Celery connects reliably (previous defaults pointed at localhost and failed). If Docker inspection fails (e.g., remote Docker Desktop), it falls back to `host.docker.internal`.

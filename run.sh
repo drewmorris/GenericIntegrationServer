@@ -9,6 +9,15 @@ CELERY_PID_FILE=.celery.pid
 WEB_PID_FILE=.web.pid
 
 start_dev() {
+  # Ensure Postgres & Redis are running
+  ./start_core_services.sh >/dev/null
+  # Determine Redis container IP and export URL for Celery/Backend
+  REDIS_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gis-redis 2>/dev/null || true)
+  if [[ -z "$REDIS_IP" || "$REDIS_IP" == "null" ]]; then
+     REDIS_IP="host.docker.internal"
+  fi
+  export REDIS_URL="redis://${REDIS_IP}:6379/0" CELERY_BROKER_URL=$REDIS_URL CELERY_RESULT_BACKEND=$REDIS_URL
+
   echo "🚀 Starting backend (uvicorn)..."
   uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload &
   echo $! > $BACK_PID_FILE
@@ -25,6 +34,13 @@ start_dev() {
 }
 
 start_prod() {
+  # Ensure Postgres & Redis are running
+  ./start_core_services.sh >/dev/null
+  REDIS_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gis-redis 2>/dev/null || true)
+  if [[ -z "$REDIS_IP" || "$REDIS_IP" == "null" ]]; then
+      REDIS_IP="host.docker.internal"
+  fi
+  export REDIS_URL="redis://${REDIS_IP}:6379/0" CELERY_BROKER_URL=$REDIS_URL CELERY_RESULT_BACKEND=$REDIS_URL
   echo "🚀 Starting backend (gunicorn)..."
   gunicorn backend.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 &
   echo $! > $BACK_PID_FILE
@@ -56,7 +72,7 @@ stop_services() {
 }
 
 case "$1" in
-  dev)
+  start|dev)
     start_dev
     ;;
   prod)
@@ -66,7 +82,7 @@ case "$1" in
     stop_services
     ;;
   *)
-    echo "Usage: $0 {start|stop}"
+    echo "Usage: $0 {start|dev|prod|stop}"
     exit 1
     ;;
  esac 
