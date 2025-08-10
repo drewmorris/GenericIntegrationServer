@@ -44,4 +44,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 120
-ignore = ["F401", "F811", "E402", "E401", "E702"] 
+ignore = ["F401", "F811", "E402", "E401", "E702"]
+extend-exclude = ["LegacyCode/*"] 
