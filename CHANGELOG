@@ -167,3 +167,14 @@
 - Reinstated strict MyPy configuration with official SQLAlchemy plugin.
 - Removed `sqlalchemy2-stubs` (conflicted with plugin).
 - Fixed Alembic migration typings and env script imports; MyPy now reports zero errors.
+
+## 2025-08-10 (0.12.22)
+- Phase 3 hardening kick-off: 
+  * Added retry/back-off (`autoretry_for`, exponential) and late-ack to `sync_connector` task.
+  * Scheduler now checks `sync_runs` table to skip profiles already running/pending, preventing duplicate jobs.
+- All tests green after new connector and orchestrator test suites.
+
+## 2025-08-10 (0.12.23)
+- Added Celery worker Docker image (`worker/Dockerfile`) and GitHub Actions workflow `worker.yml` to build/test/push image.
+- Added unit test `test_retry_policy.py` verifying task retry settings.
+- Marked Phase 3 milestone (worker image) complete in TODO.

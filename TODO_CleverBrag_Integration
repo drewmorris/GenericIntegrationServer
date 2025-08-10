@@ -69,21 +69,21 @@ Milestones
 □ CHANGELOG updated
 
 ────────────────────────────────────
-2.  Connector Extraction & Packaging  (Week 2-3)
+2.  Connector Runtime (Week 2-3) – *In-repo for GA*
 ────────────────────────────────────
-• Move `connector_base`, retry logic, state management from Onyx into `onyx_connectors.runtime`.
-• Keep provider implementations (`google_sheets`, `salesforce`, etc.) identical.
-• Publish package version `0.1.0` to internal PyPI.
-• Backend depends on exact version; override PATH in dev with `pip install -e ../onyx_connectors`.
+Decision 2025-08-09: keep the Onyx connector runtime **vendored inside this repository** until GA.  Extraction and PyPI packaging becomes post-GA tech-debt.
 
-Tests
-• Re-run existing Onyx connector unit tests (now inside connectors repo).
-• Integration test: spin up worker, execute `google_sheets` sync against mock API, verify `sync_runs` row written.
+Scope for GA
+• Copy Onyx runtime & provider code into `connectors/onyx/` (already done).
+• Ensure import paths `connectors.onyx…` work from backend tasks.
+• Unit-test legacy connector logic where feasible.
+
+Post-GA backlog (Phase T-D)
+• Extract to `onyx-connectors` package, publish, and update server dependency.
 
 Milestones
-□ Package published & tagged
-□ All legacy tests green
-□ CHANGELOG updated
+□ Legacy connector tests green inside monorepo
+□ CHANGELOG updated (runtime stabilised)
 
 ────────────────────────────────────
 3.  Orchestrator & Job Processing  (Week 3-4)
@@ -98,7 +98,7 @@ Tests
 • Integration: containerised Postgres + Redis + Worker; create profile, trigger schedule, assert rows/states.
 
 Milestones
-□ Worker docker image published
+✓ Worker docker image published
 □ Avg sync <30 s in staging
 □ CHANGELOG updated
 
@@ -217,5 +217,7 @@ Post-MVP Note (added 2025-08-04)
   – remove the in-repo `connectors/` directory from the main package list
   – add `onyx-connectors = "^0.1.0"` as a normal Poetry dependency in `pyproject.toml`
   – update CI to install from the private index (or use a `--extra-index-url`) 
+
+- Extract the connector-runtime into its own package
 
 - [ ] Phase 4 TODO: Add bulk document batching support to CleverBragDestination for performance after single-doc flow proven. 

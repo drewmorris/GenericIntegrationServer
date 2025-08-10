@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 
 from backend.settings import get_settings
-from backend.db.models import ConnectorProfile
+from backend.db.models import ConnectorProfile, SyncRun
 from backend.orchestrator import celery_app
 from backend.orchestrator.tasks import sync_connector as sync_dummy
 
@@ -33,6 +33,14 @@ async def scan_due_profiles() -> None:  # noqa: D401
         due_profiles = result.scalars().all()
 
         for profile in due_profiles:
+            # skip if a run is already pending/running for this profile
+            existing = await session.execute(
+                select(SyncRun).where(
+                    (SyncRun.profile_id == profile.id) & (SyncRun.status.in_(["running", "pending"]))
+                )
+            )
+            if existing.scalars().first():
+                continue
             # Schedule the sync task; use .delay so tests can monkey-patch it easily
             sync_dummy.delay(str(profile.id), str(profile.user_id), str(profile.organization_id))
             profile.next_run_at = now + timedelta(minutes=profile.interval_minutes)
