@@ -6,7 +6,8 @@ authors = ["Integration Team <team@example.com>"]
 readme = "README.md"
 packages = [
     { include = "backend" },
-    { include = "connectors" }
+    { include = "connectors" },
+    { include = "connectors/onyx" }
 ]
 
 [tool.poetry.dependencies]
