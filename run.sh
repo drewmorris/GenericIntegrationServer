@@ -11,6 +11,10 @@ WEB_PID_FILE=.web.pid
 start_dev() {
   # Ensure Postgres & Redis are running
   ./start_core_services.sh >/dev/null
+  # Load persisted core env if available
+  if [[ -f ./.core_env ]]; then
+    set -a; source ./.core_env; set +a
+  fi
   # Determine Redis container IP and export URL for Celery/Backend
   REDIS_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gis-redis 2>/dev/null || true)
   if [[ -z "$REDIS_IP" || "$REDIS_IP" == "null" ]]; then
@@ -27,7 +31,7 @@ start_dev() {
   echo $! > $CELERY_PID_FILE
 
   echo "🌐 Starting web dev server..."
-  npm --prefix web run dev -- --port 5173 &
+  npm --prefix web run dev -- --host 0.0.0.0 --port 5173 &
   echo $! > $WEB_PID_FILE
 
   echo "✅ All services started (backend:8000, web:5173)"
@@ -36,6 +40,9 @@ start_dev() {
 start_prod() {
   # Ensure Postgres & Redis are running
   ./start_core_services.sh >/dev/null
+  if [[ -f ./.core_env ]]; then
+    set -a; source ./.core_env; set +a
+  fi
   REDIS_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gis-redis 2>/dev/null || true)
   if [[ -z "$REDIS_IP" || "$REDIS_IP" == "null" ]]; then
       REDIS_IP="host.docker.internal"
@@ -51,7 +58,7 @@ start_prod() {
 
   echo "🌐 Building and serving web..."
   npm --prefix web run build
-  npx serve -s web/dist -l 5173 &
+  npx serve -s web/dist -l 0.0.0.0:5173 &
   echo $! > $WEB_PID_FILE
 
   echo "✅ Production services started (backend:8000, web:5173)"
@@ -59,15 +66,35 @@ start_prod() {
 
 stop_services() {
   echo "🛑 Stopping services..."
-  for f in $BACK_PID_FILE $CELERY_PID_FILE $WEB_PID_FILE; do
-    if [[ -f $f ]]; then
-      pid=$(cat $f)
-      if kill -0 $pid 2>/dev/null; then
-        kill $pid && echo "Stopped PID $pid from $f"
+  kill_one() {
+    local pid_file="$1"
+    [[ -f "$pid_file" ]] || return 0
+    local pid=$(cat "$pid_file")
+    if kill -0 "$pid" 2>/dev/null; then
+      kill "$pid" 2>/dev/null || true
+      pkill -TERM -P "$pid" 2>/dev/null || true
+      for i in {1..10}; do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 0.3
+      done
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -9 "$pid" 2>/dev/null || true
+        pkill -9 -P "$pid" 2>/dev/null || true
       fi
-      rm -f $f
+      echo "Stopped PID $pid from $pid_file"
     fi
-  done
+    rm -f "$pid_file"
+  }
+
+  kill_one "$BACK_PID_FILE"
+  kill_one "$CELERY_PID_FILE"
+  kill_one "$WEB_PID_FILE"
+
+  # Fallback: ensure no stragglers keep ports bound
+  pkill -f "uvicorn backend.main:app" 2>/dev/null || true
+  pkill -f "celery -A backend.orchestrator.celery_app worker" 2>/dev/null || true
+  pkill -f "vite --host" 2>/dev/null || true
+  pkill -f "serve -s web/dist" 2>/dev/null || true
   echo "✅ Services stopped."
 }
 

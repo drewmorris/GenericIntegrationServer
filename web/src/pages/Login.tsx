@@ -1,6 +1,7 @@
-import { TextField, Button, Container, Typography } from '@mui/material';
+import { TextField, Button, Container, Typography, Link, Stack } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -48,9 +49,14 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <Button variant="contained" type="submit" sx={{ mt: 2 }}>
-          Login
-        </Button>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Button variant="contained" type="submit">
+            Login
+          </Button>
+          <Link component={RouterLink} to="/signup" underline="hover">
+            Create an account
+          </Link>
+        </Stack>
       </form>
     </Container>
   );

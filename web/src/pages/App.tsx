@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 
 import Login from './Login';
+import Signup from './Signup';
 import ProfileEdit from './ProfileEdit';
 import ProfilesList from './ProfilesList';
 import ProfileWizard from './ProfileWizard';
@@ -28,6 +29,7 @@ export default function App() {
       {accessToken && <TopNav />}
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/" element={accessToken ? <Dashboard /> : <Navigate to="/login" />} />
         <Route
           path="/profiles"

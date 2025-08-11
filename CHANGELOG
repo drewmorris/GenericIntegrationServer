@@ -217,3 +217,20 @@
 ### Changed
 * `run.sh` now automatically invokes `start_core_services.sh` before launching backend, Celery, and web dev/prod servers, ensuring Postgres and Redis are available and avoiding connection errors.
 * It detects the Redis container IP and exports `REDIS_URL`, `CELERY_BROKER_URL`, and `CELERY_RESULT_BACKEND` so Celery connects reliably (previous defaults pointed at localhost and failed). If Docker inspection fails (e.g., remote Docker Desktop), it falls back to `host.docker.internal`.
+* Web dev server now runs with `--host 0.0.0.0` and production `serve` binds to `0.0.0.0`, so the UI is accessible via localhost or forwarded ports in remote containers.
+
+## 2025-08-10 (0.12.30)
+### Added
+* Web: Signup page (`web/src/pages/Signup.tsx`) with org name, email, and password; logs in automatically after successful signup.
+* Routing: `/signup` route and link from `/login` to `/signup`.
+### Changed
+* Dev server: Vite now proxies API paths (`/auth`, `/profiles`, `/orchestrator`) to `http://localhost:8000` so the web app talks to the backend without CORS issues during development.
+
+## 2025-08-10 (0.12.31)
+### Changed
+* `run.sh stop` is now more robust: terminates child processes, waits for exit, then sends SIGKILL if needed, and includes pattern-based fallbacks to ensure ports are freed between restarts.
+
+## 2025-08-10 (0.12.32)
+### Added
+* `start_core_services.sh` now writes resolved connection settings to `.core_env` (`POSTGRES_*`, `REDIS_URL`).
+* `run.sh` sources `.core_env` on start so backend/Celery consistently use the same DB/Redis endpoints.

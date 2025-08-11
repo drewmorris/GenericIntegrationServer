@@ -139,9 +139,19 @@ main(){
   require_docker
   start_postgres
   start_redis
-  # Determine container IP and use it for migrations / application
+  # Determine container IPs and export; persist to .core_env for caller shells
   POSTGRES_HOST=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$PG_CONT_NAME")
+  REDIS_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$REDIS_CONT_NAME")
   export POSTGRES_HOST POSTGRES_PORT POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
+  export REDIS_URL="redis://${REDIS_IP}:6379/0"
+  {
+    echo "POSTGRES_HOST=$POSTGRES_HOST"
+    echo "POSTGRES_PORT=$POSTGRES_PORT"
+    echo "POSTGRES_USER=$POSTGRES_USER"
+    echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
+    echo "POSTGRES_DB=$POSTGRES_DB"
+    echo "REDIS_URL=$REDIS_URL"
+  } > .core_env
   run_migrations
   log "✅ Core services are up and ready"
 }
