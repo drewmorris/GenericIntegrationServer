@@ -234,3 +234,18 @@
 ### Added
 * `start_core_services.sh` now writes resolved connection settings to `.core_env` (`POSTGRES_*`, `REDIS_URL`).
 * `run.sh` sources `.core_env` on start so backend/Celery consistently use the same DB/Redis endpoints.
+
+## 2025-08-10 (0.12.33)
+### Fixed
+* Signup/Login 500s: persist refresh tokens using a separate async DB session to avoid asyncpg "another operation is in progress" errors caused by concurrent use of the request-bound session.
+
+## 2025-08-10 (0.12.34)
+### Fixed
+* Signup now returns 400 with "User already exists" instead of a 500 IntegrityError when an email is already registered.
+
+## 2025-08-10 (0.12.35)
+### Fixed
+* Backend: enabled CORS for `http://localhost:5173` so the web UI can call the API without browser blocks.
+* Profiles routes: added no-trailing-slash variants to avoid 307 redirects that can confuse dev proxies or trigger CORS preflights.
+### Changed
+* Vite proxy entries now use objects with `changeOrigin` and `secure:false` for more robust dev proxying.

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from backend.routes import auth as auth_router
 from backend.routes import orchestrator as orch_router
@@ -12,6 +13,15 @@ app = FastAPI(
     terms_of_service="https://example.com/terms",
     contact={"name": "Dev Team", "email": "dev@example.com"},
     license_info={"name": "MIT"},
+)
+
+# CORS for local dev UI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Prometheus metrics

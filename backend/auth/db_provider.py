@@ -120,6 +120,10 @@ class DbAuthProvider(AuthProvider):
             org_id = org.id
 
         hashed = hash_password(password)
+        # prevent duplicate users (unique index may raise otherwise)
+        existing = await self._db.execute(select(User).where(User.email == email))
+        if existing.scalar_one_or_none() is not None:
+            raise ValueError("User already exists")
         user = User(email=email, hashed_pw=hashed, organization_id=org_id)
         self._db.add(user)
         await self._db.commit()
@@ -175,22 +179,40 @@ class DbAuthProvider(AuthProvider):
         access_token = jwt.encode(access_payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
         refresh_token = jwt.encode(refresh_payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
-        # Persist refresh token if DB available
+        # Persist refresh token if DB available – use a separate session to avoid
+        # concurrent operations on the request-bound session.
         if self._db is not None:
             from backend.db.models import UserToken, User  # local import to avoid circular
 
-            async def _store():  # inner coroutine
-                result = await self._db.execute(select(User).where(User.email == subject_email))
-                user = result.scalar_one()
-                token_row = UserToken(id=uuid.uuid4(), user_id=user.id, refresh_token_jti=jti, expires_at=now + timedelta(days=settings.refresh_ttl_days), created_at=now)
-                self._db.add(token_row)
-                await self._db.commit()
+            async def _store():  # inner coroutine using independent session
+                try:
+                    from backend.db.session import AsyncSessionLocal
+                    async with AsyncSessionLocal() as session:
+                        result = await session.execute(select(User).where(User.email == subject_email))
+                        user = result.scalar_one()
+                        token_row = UserToken(
+                            id=uuid.uuid4(),
+                            user_id=user.id,
+                            refresh_token_jti=jti,
+                            expires_at=now + timedelta(days=settings.refresh_ttl_days),
+                            created_at=now,
+                        )
+                        session.add(token_row)
+                        await session.commit()
+                except Exception:
+                    # Best-effort; token persistence failure should not break login/signup
+                    return
 
             import asyncio
-
-            if asyncio.get_event_loop().is_running():
-                asyncio.create_task(_store())
-            else:
-                asyncio.run(_store())
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(_store())
+                else:
+                    loop.run_until_complete(_store())
+            except RuntimeError:
+                # No event loop – run directly
+                import asyncio as _asyncio
+                _asyncio.run(_store())
 
         return TokenPair(access_token=access_token, refresh_token=refresh_token) 

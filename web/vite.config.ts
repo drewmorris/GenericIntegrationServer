@@ -7,9 +7,9 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            '/auth': 'http://localhost:8000',
-            '/profiles': 'http://localhost:8000',
-            '/orchestrator': 'http://localhost:8000',
+            '/auth': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
+            '/profiles': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
+            '/orchestrator': { target: 'http://localhost:8000', changeOrigin: true, secure: false },
         },
     },
     test: {

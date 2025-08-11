@@ -20,13 +20,13 @@ export default function Signup() {
                 {
                     email,
                     password,
-                    org_name: org,
+                    organization: org,
                 },
             );
             auth.login(String(data.access_token), String(data.refresh_token));
             navigate('/');
         } catch {
-            alert('Signup failed');
+            /* handled by global axios interceptor */
         }
     };
 

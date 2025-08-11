@@ -28,6 +28,15 @@ async def list_profiles(db: AsyncSession = Depends(get_db)) -> list[m.ConnectorP
     res = await db.execute(select(m.ConnectorProfile))
     return list(res.scalars().all())
 
+# Support no-trailing-slash variant to prevent 307 redirects under proxies
+@router.get(
+    "",
+    response_model=List[ConnectorProfileOut],
+    include_in_schema=False,
+)
+async def list_profiles_no_slash(db: AsyncSession = Depends(get_db)) -> list[m.ConnectorProfile]:
+    return await list_profiles(db)
+
 
 @router.post(
     "/",
@@ -50,6 +59,15 @@ async def create_profile(payload: ConnectorProfileCreate, db: AsyncSession = Dep
     await db.commit()
     await db.refresh(obj)
     return obj
+
+@router.post(
+    "",
+    response_model=ConnectorProfileOut,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
+async def create_profile_no_slash(payload: ConnectorProfileCreate, db: AsyncSession = Depends(get_db)) -> m.ConnectorProfile:
+    return await create_profile(payload, db)
 
 
 @router.get(
