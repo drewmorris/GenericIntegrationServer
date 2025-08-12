@@ -37,6 +37,9 @@ export default function TopNav() {
         <Button color="inherit" onClick={() => navigate('/profiles')} sx={{ mr: 1 }}>
           Profiles
         </Button>
+        <Button color="inherit" onClick={() => navigate('/connectors')} sx={{ mr: 1 }}>
+          Connectors
+        </Button>
         <Button color="inherit" onClick={() => navigate('/destinations')} sx={{ mr: 1 }}>
           Destinations
         </Button>

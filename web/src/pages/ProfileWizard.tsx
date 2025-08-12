@@ -19,6 +19,7 @@ import { useSnack } from '../components/Snackbar';
 import { useCreateProfile } from '../hooks/useCreateProfile';
 import { useDestinationDefinitions } from '../hooks/useDestinations';
 import { useConnectorDefinitions } from '../hooks/useConnectors';
+import { useCredentials } from '../hooks/useCredentials';
 
 const steps = ['Basics', 'Connector', 'Destination', 'Review'];
 
@@ -32,6 +33,10 @@ export default function ProfileWizard() {
   const [connector, setConnector] = useState<string>('mock_source');
   const connDef = useMemo(() => connectorDefs.find((c) => c.name === connector) || connectorDefs[0], [connectorDefs, connector]);
   const [connectorValues, setConnectorValues] = useState<Record<string, string>>({});
+  const orgId = localStorage.getItem('org_id') ?? '';
+  const userId = localStorage.getItem('user_id') ?? '';
+  const { data: creds = [] } = useCredentials({ organization_id: orgId, user_id: userId, connector_name: connector });
+  const [credentialId, setCredentialId] = useState<string>('');
 
   const [destination, setDestination] = useState<string>('cleverbrag');
   const destDef = useMemo(() => destinationDefs.find((d) => d.name === destination) || destinationDefs[0], [destinationDefs, destination]);
@@ -56,6 +61,7 @@ export default function ProfileWizard() {
           [destination]: destinationValues,
           [connector]: connectorValues,
         },
+        credential_id: credentialId || undefined,
       });
       navigate('/profiles');
       snack.enqueue('Profile created', { variant: 'success' });
@@ -124,6 +130,19 @@ export default function ProfileWizard() {
           >
             {connectorDefs.map((c) => (
               <MenuItem key={c.name} value={c.name}>{c.schema?.title ?? c.name}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            fullWidth
+            label="Credential"
+            margin="normal"
+            value={credentialId}
+            onChange={(e) => setCredentialId(e.target.value)}
+            helperText={creds.length ? 'Select an existing credential for this connector' : 'No credentials found; create one in Connectors page'}
+          >
+            {creds.map((cr) => (
+              <MenuItem key={cr.id} value={cr.id}>{cr.provider_key}</MenuItem>
             ))}
           </TextField>
           {renderSchemaForm(connDef?.schema, connectorValues, setConnectorValues)}

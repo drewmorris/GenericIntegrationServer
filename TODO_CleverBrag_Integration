@@ -251,6 +251,13 @@ Action: add Connectors page; pick credential in wizard; validate/test
 - Current: plain JSON storage in MVP
 Action: add encryption, masking, rotation endpoints/policies
 
+
+STRETCH GOALS
+• KeycloakAuthProvider implementation & migration guide
+• Usage-based billing integration (Stripe)
+• Versioned webhook API for downstream systems
+• Offline sync mode (Edge worker)
+
 ────────────────────────────────────
 Conventions
 ────────────────────────────────────

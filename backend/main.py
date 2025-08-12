@@ -9,6 +9,7 @@ from backend.routes import destinations as destinations_router
 from backend.routes import targets as targets_router
 from backend.routes import connectors as connectors_router
 from backend.routes import credentials as credentials_router
+from backend.routes import oauth as oauth_router
 
 app = FastAPI(
     title="Integration Server",
@@ -39,6 +40,7 @@ app.include_router(destinations_router.router)
 app.include_router(targets_router.router)
 app.include_router(connectors_router.router)
 app.include_router(credentials_router.router)
+app.include_router(oauth_router.router)
 
 
 @app.get("/health", tags=["Health"])

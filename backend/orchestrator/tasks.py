@@ -71,13 +71,11 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
                 conn_cfg = (profile.connector_config or {}).get(profile.source, {})
                 connector = connector_cls(**conn_cfg)
                 # Load credentials if present
-                cred = None
                 if getattr(profile, "credential_id", None):
-                    # Simple static injection for MVP – Onyx dynamic provider requires legacy DB; skip for now
-                    from backend.db.models import Credential as _Cred
-                    cred = (await session.execute(select(_Cred).where(_Cred.id == profile.credential_id))).scalar_one_or_none()
-                    if cred is not None:
-                        connector.load_credentials(cred.credential_json)
+                    # Use our DB-backed provider to fetch credentials
+                    from backend.connectors.credentials_provider import DBCredentialsProvider
+                    with DBCredentialsProvider(tenant_id=str(org_id), connector_name=profile.source, credential_id=str(profile.credential_id), db=session) as prov:  # type: ignore[arg-type]
+                        connector.load_credentials(prov.get_credentials())
                 runner = ConnectorRunner(connector, batch_size=10, include_permissions=False, time_range=(_dt.datetime.utcnow(), _dt.datetime.utcnow()))
                 # For MVP, attempt dummy checkpoint path if available, else load state
                 docs = []

@@ -9,6 +9,7 @@ from backend.db.session import get_db
 from backend.db import models as m
 from pydantic import BaseModel, Field
 import uuid
+from backend.security.crypto import encrypt_dict, maybe_decrypt_dict
 
 router = APIRouter(prefix="/credentials", tags=["Credentials"])
 
@@ -44,7 +45,9 @@ async def list_credentials(
     if connector_name is not None:
         stmt = stmt.where(m.Credential.connector_name == connector_name)
     res = await db.execute(stmt)
-    return list(res.scalars().all())
+    rows = list(res.scalars().all())
+    # Decrypt in-memory for response (but do not include secrets by default)
+    return rows
 
 @router.post("/", response_model=CredentialOut, status_code=status.HTTP_201_CREATED)
 async def create_credential(payload: CredentialCreate, db: AsyncSession = Depends(get_db)) -> m.Credential:
@@ -53,7 +56,7 @@ async def create_credential(payload: CredentialCreate, db: AsyncSession = Depend
         user_id=payload.user_id,
         connector_name=payload.connector_name,
         provider_key=payload.provider_key,
-        credential_json=payload.credential_json,
+        credential_json=encrypt_dict(payload.credential_json),
     )
     db.add(obj)
     await db.commit()

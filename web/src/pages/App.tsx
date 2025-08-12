@@ -13,6 +13,7 @@ import ProfilesList from './ProfilesList';
 import ProfileWizard from './ProfileWizard';
 import SyncRunsPage from './SyncRunsPage';
 import DestinationsPage from './Destinations';
+import ConnectorsPage from './Connectors';
 
 function Dashboard() {
   const { totalProfiles } = useDashboardStats();
@@ -51,6 +52,10 @@ export default function App() {
         <Route
           path="/destinations"
           element={accessToken ? <DestinationsPage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/connectors"
+          element={accessToken ? <ConnectorsPage /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
