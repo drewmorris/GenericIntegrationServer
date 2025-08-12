@@ -3,6 +3,7 @@ import { Container, Typography, Paper, Stack, Select, MenuItem, Button, Alert, T
 import { useConnectorDefinitions } from '../hooks/useConnectors';
 import { useCredentials } from '../hooks/useCredentials';
 import { api } from '../lib/api';
+import { randomVerifier, s256Challenge } from '../lib/pkce';
 
 function randState(): string {
     try {
@@ -44,9 +45,11 @@ export default function ConnectorsPage() {
         if (!def) return;
         try {
             const state = randState();
+            const verifier = randomVerifier();
+            const challenge = await s256Challenge(verifier);
             const next = `${window.location.origin}/connectors`;
             const { data } = await api.get<{ authorization_url: string }>(`/oauth/${def.name}/start`, {
-                params: { state, organization_id: orgId, user_id: userId, next },
+                params: { state, organization_id: orgId, user_id: userId, next, code_challenge: challenge, code_challenge_method: 'S256', code_verifier: verifier },
             });
             window.location.href = data.authorization_url;
         } catch (e) {
@@ -97,17 +100,7 @@ export default function ConnectorsPage() {
                         <Paper variant="outlined" sx={{ p: 1 }}>
                             <Stack spacing={1}>
                                 {creds.map((c) => (
-                                    <Stack key={c.id} direction="row" spacing={1} alignItems="center">
-                                        <div style={{ flex: 1 }}>{c.provider_key} — {c.id}</div>
-                                        <Button size="small" variant="outlined" onClick={async () => {
-                                            try {
-                                                const { data } = await api.post<{ ok: boolean; detail?: string }>(`/credentials/${c.id}/test`);
-                                                setMessage(data.ok ? `Credential ${c.id} OK` : `Credential ${c.id} failed: ${data.detail ?? 'unknown'}`);
-                                            } catch (e) {
-                                                setMessage(`Credential ${c.id} test failed`);
-                                            }
-                                        }}>Test</Button>
-                                    </Stack>
+                                    <CredRow key={c.id} id={c.id} providerKey={c.provider_key} onChanged={refetch} onMessage={setMessage} />
                                 ))}
                             </Stack>
                         </Paper>
@@ -126,5 +119,61 @@ export default function ConnectorsPage() {
                 </Stack>
             </Paper>
         </Container>
+    );
+}
+
+function CredRow({ id, providerKey, onChanged, onMessage }: { id: string; providerKey: string; onChanged: () => void; onMessage: (m: string | null) => void }) {
+    const [editing, setEditing] = useState(false);
+    const [pk, setPk] = useState(providerKey);
+    const save = async () => {
+        try {
+            await api.patch(`/credentials/${id}`, { provider_key: pk });
+            onMessage(`Credential ${id} updated`);
+            setEditing(false);
+            onChanged();
+        } catch {
+            onMessage(`Failed to update ${id}`);
+        }
+    };
+    const del = async () => {
+        if (!confirm('Delete this credential?')) return;
+        try {
+            await api.delete(`/credentials/${id}`);
+            onMessage(`Credential ${id} deleted`);
+            onChanged();
+        } catch {
+            onMessage(`Failed to delete ${id}`);
+        }
+    };
+    const test = async () => {
+        try {
+            const { data } = await api.post<{ ok: boolean; detail?: string }>(`/credentials/${id}/test`);
+            onMessage(data.ok ? `Credential ${id} OK` : `Credential ${id} failed: ${data.detail ?? 'unknown'}`);
+        } catch {
+            onMessage(`Credential ${id} test failed`);
+        }
+    };
+    return (
+        <Stack direction="row" spacing={1} alignItems="center">
+            <div style={{ flex: 1 }}>
+                {editing ? (
+                    <TextField size="small" value={pk} onChange={(e) => setPk(e.target.value)} />
+                ) : (
+                    <span>{providerKey} — {id}</span>
+                )}
+            </div>
+            {!editing && <Button size="small" variant="outlined" onClick={test}>Test</Button>}
+            {editing ? (
+                <>
+                    <Button size="small" variant="contained" onClick={save}>Save</Button>
+                    <Button size="small" onClick={() => { setEditing(false); setPk(providerKey); }}>Cancel</Button>
+                </>
+            ) : (
+                <>
+                    <Button size="small" onClick={() => setEditing(true)}>Edit</Button>
+                    <Button size="small" color="error" onClick={del}>Delete</Button>
+                </>
+            )}
+        </Stack>
     );
 } 

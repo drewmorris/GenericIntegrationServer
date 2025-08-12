@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 import os
 import json
+from urllib.parse import urlparse
 
 from connectors.onyx.configs.constants import DocumentSource  # type: ignore
 from connectors.onyx.connectors.interfaces import OAuthConnector  # type: ignore
@@ -41,6 +42,17 @@ def _get_redis():
     return None
 
 
+def _is_allowed(url: str | None) -> bool:
+    if not url:
+        return True
+    allowed = os.getenv("OAUTH_ALLOWED_REDIRECT_HOSTS", "")
+    if not allowed:
+        # default allow only same-origin
+        return True
+    host = urlparse(url).netloc
+    return any(h and h.strip() == host for h in allowed.split(","))
+
+
 @router.get("/{connector}/start", summary="Start OAuth flow", description="Return the provider authorization URL to redirect the user.")
 async def oauth_start(
     request: Request,
@@ -50,7 +62,17 @@ async def oauth_start(
     user_id: uuid.UUID = Query(...),
     redirect_uri: str | None = Query(default=None),
     next: str | None = Query(default=None, description="UI URL to redirect to after callback"),
+    code_challenge: str | None = Query(default=None),
+    code_challenge_method: str | None = Query(default=None),
+    code_verifier: str | None = Query(default=None),
 ):
+    if not state or len(state) < 8:
+        raise HTTPException(status_code=400, detail="Invalid state")
+    if not _is_allowed(next):
+        raise HTTPException(status_code=400, detail="Disallowed next URL host")
+    if redirect_uri and not _is_allowed(redirect_uri):
+        raise HTTPException(status_code=400, detail="Disallowed redirect_uri host")
+
     try:
         src = getattr(DocumentSource, connector.upper())
     except AttributeError as exc:  # noqa: BLE001
@@ -64,9 +86,14 @@ async def oauth_start(
     additional_kwargs: dict[str, str] = {}
     if redirect_uri:
         additional_kwargs["redirect_uri"] = redirect_uri
+    if code_challenge and code_challenge_method:
+        additional_kwargs["code_challenge"] = code_challenge
+        additional_kwargs["code_challenge_method"] = code_challenge_method
 
-    # store state → org/user for callback validation
+    # store state → org/user (+ pkce verifier) for callback validation
     data = {"organization_id": str(organization_id), "user_id": str(user_id), "connector": connector, "next": next}
+    if code_verifier:
+        data["code_verifier"] = code_verifier
     r = _get_redis()
     if r is not None:
         try:
@@ -100,7 +127,7 @@ async def oauth_callback(
     if not issubclass(conn_cls, OAuthConnector):
         raise HTTPException(status_code=400, detail="Connector does not support OAuth")
 
-    # resolve org/user from stored state
+    # resolve state
     resolved_org = organization_id
     resolved_user = user_id
     r = _get_redis()
@@ -120,14 +147,19 @@ async def oauth_callback(
         resolved_org = uuid.UUID(stored["organization_id"])  # type: ignore[arg-type]
         resolved_user = uuid.UUID(stored["user_id"])  # type: ignore[arg-type]
         next_url = stored.get("next") if isinstance(stored, dict) else None
+        code_verifier = stored.get("code_verifier") if isinstance(stored, dict) else None
+    else:
+        code_verifier = None
 
     if resolved_org is None or resolved_user is None:
         raise HTTPException(status_code=400, detail="Missing organization_id/user_id for OAuth callback")
 
     base_domain = _get_base_domain(request)
     additional_kwargs: dict[str, str] = {"state": state}
-    if redirect_uri:
+    if redirect_uri and _is_allowed(redirect_uri):
         additional_kwargs["redirect_uri"] = redirect_uri
+    if code_verifier:
+        additional_kwargs["code_verifier"] = code_verifier
 
     try:
         token_dict = conn_cls.oauth_code_to_token(base_domain, code, additional_kwargs)
@@ -147,5 +179,6 @@ async def oauth_callback(
     await db.refresh(cred)
     if stored and isinstance(stored, dict) and stored.get("next"):
         # Redirect back to UI with credential_id
-        return RedirectResponse(url=f"{stored['next']}?credential_id={cred.id}", status_code=302)
+        if _is_allowed(stored["next"]):
+            return RedirectResponse(url=f"{stored['next']}?credential_id={cred.id}", status_code=302)
     return {"credential_id": str(cred.id)} 
