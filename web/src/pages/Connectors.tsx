@@ -97,7 +97,17 @@ export default function ConnectorsPage() {
                         <Paper variant="outlined" sx={{ p: 1 }}>
                             <Stack spacing={1}>
                                 {creds.map((c) => (
-                                    <div key={c.id}>{c.provider_key} — {c.id}</div>
+                                    <Stack key={c.id} direction="row" spacing={1} alignItems="center">
+                                        <div style={{ flex: 1 }}>{c.provider_key} — {c.id}</div>
+                                        <Button size="small" variant="outlined" onClick={async () => {
+                                            try {
+                                                const { data } = await api.post<{ ok: boolean; detail?: string }>(`/credentials/${c.id}/test`);
+                                                setMessage(data.ok ? `Credential ${c.id} OK` : `Credential ${c.id} failed: ${data.detail ?? 'unknown'}`);
+                                            } catch (e) {
+                                                setMessage(`Credential ${c.id} test failed`);
+                                            }
+                                        }}>Test</Button>
+                                    </Stack>
                                 ))}
                             </Stack>
                         </Paper>

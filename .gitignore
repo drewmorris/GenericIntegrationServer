@@ -1,13 +1,17 @@
 # Python byte-code
 __pycache__/
 *.py[cod]
+
+# control pid files
 *.pid
 
+# logs
 /logs/
 
+# legacy code
 LegacyCode/
 
+# node_modules
 web/node_modules/
 /web/node_modules/
-
 node_modules/

@@ -14,6 +14,7 @@ except Exception:  # noqa: BLE001
 
 from connectors.onyx.connectors.interfaces import CredentialsProviderInterface  # type: ignore
 from backend.db.models import Credential
+from backend.security.crypto import maybe_decrypt_dict, encrypt_dict
 
 
 class DBCredentialsProvider(CredentialsProviderInterface["DBCredentialsProvider"]):
@@ -37,7 +38,6 @@ class DBCredentialsProvider(CredentialsProviderInterface["DBCredentialsProvider"
 
     def __enter__(self) -> "DBCredentialsProvider":
         if self._redis is not None:
-            # 15-min lock ttl similar to legacy
             self._lock = self._redis.lock(self._lock_key, timeout=900)
             acquired = self._lock.acquire(blocking=True, blocking_timeout=900)
             if not acquired:
@@ -63,12 +63,10 @@ class DBCredentialsProvider(CredentialsProviderInterface["DBCredentialsProvider"
         return str(self._credential_id)
 
     def get_credentials(self) -> dict[str, Any]:
-        # sync getter on async session via run_sync pattern not needed for simple scalar
-        # caller uses it synchronously within connector lib
         cred = self._db.sync_session.execute(  # type: ignore[attr-defined]
             select(Credential).where(Credential.id == self._credential_id)
         ).scalar_one()
-        return cred.credential_json  # already encrypted at rest; DB returns dict
+        return maybe_decrypt_dict(cred.credential_json)
 
     def set_credentials(self, credential_json: dict[str, Any]) -> None:
         try:
@@ -76,7 +74,7 @@ class DBCredentialsProvider(CredentialsProviderInterface["DBCredentialsProvider"
             cred = sess.execute(
                 select(Credential).where(Credential.id == self._credential_id).with_for_update()
             ).scalar_one()
-            cred.credential_json = credential_json
+            cred.credential_json = encrypt_dict(credential_json)
             sess.commit()
         except Exception:  # noqa: BLE001
             sess.rollback()

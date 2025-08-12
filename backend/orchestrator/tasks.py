@@ -36,6 +36,8 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
 
     async def _runner(session):
         await set_current_org(session, uuid.UUID(org_id))
+        from backend.legacy_context import set_legacy_tenant
+        set_legacy_tenant(uuid.UUID(org_id))
         profile = (
             await session.execute(
                 select(m.ConnectorProfile).where(m.ConnectorProfile.id == connector_profile_id)
