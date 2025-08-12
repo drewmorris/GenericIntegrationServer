@@ -34,6 +34,12 @@ export default function TopNav() {
         >
           <MenuItem value={orgId}>{orgId}</MenuItem>
         </Select>
+        <Button color="inherit" onClick={() => navigate('/profiles')} sx={{ mr: 1 }}>
+          Profiles
+        </Button>
+        <Button color="inherit" onClick={() => navigate('/destinations')} sx={{ mr: 1 }}>
+          Destinations
+        </Button>
         <Button color="inherit" onClick={handleLogout}>
           Logout
         </Button>

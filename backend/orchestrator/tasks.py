@@ -42,17 +42,17 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
             )
         ).scalar_one()
 
-        # --------------------------------------------------
-        # Use actual Onyx connector runtime when possible
-        # --------------------------------------------------
+        # Real connector path using Onyx runtime when possible
         docs: list[dict]
         try:
+            import datetime as _dt
+            from connectors.onyx.configs.constants import DocumentSource  # type: ignore
             from connectors.onyx.connectors.connector_runner import ConnectorRunner  # type: ignore
             from connectors.onyx.connectors.mock_connector.connector import MockConnector, MockConnectorCheckpoint  # type: ignore
-            import datetime as _dt
+            from connectors.onyx.connectors.models import InputType  # type: ignore
+            from connectors.onyx.connectors.factory import identify_connector_class  # type: ignore
 
             if profile.source == "mock_source":
-                # Basic demo using MockConnector (does not hit external APIs)
                 connector = MockConnector(mock_server_host="localhost", mock_server_port=9999)
                 connector.load_credentials(profile.connector_config or {})
                 runner = ConnectorRunner(connector, batch_size=10, include_permissions=False, time_range=(_dt.datetime.utcnow(), _dt.datetime.utcnow()))
@@ -62,20 +62,36 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
                     if batch:
                         docs.extend([d.model_dump(mode="json") for d in batch])
                 if not docs:
-                    # fall back if no docs
                     docs.append({"id": profile.id, "raw_text": "mock doc"})
             else:
-                # TODO: map other sources → real connectors (Phase 6)
-                docs = [{"id": profile.id, "raw_text": "placeholder doc"}]
-        except Exception:  # noqa: BLE001
-            # Fallback to placeholder document on any failure / missing deps
-            docs = [
-                {
-                    "id": profile.id,
-                    "metadata": {"profile_name": profile.name},
-                    "raw_text": "This is a placeholder document from integration server.",
-                }
-            ]
+                # Identify connector class by DocumentSource
+                src = getattr(DocumentSource, profile.source.upper())
+                connector_cls = identify_connector_class(src, InputType.LOAD_STATE)
+                # Supply connector-specific config (non-secret) from profile
+                conn_cfg = (profile.connector_config or {}).get(profile.source, {})
+                connector = connector_cls(**conn_cfg)
+                # Load credentials if present
+                cred = None
+                if getattr(profile, "credential_id", None):
+                    # Simple static injection for MVP – Onyx dynamic provider requires legacy DB; skip for now
+                    from backend.db.models import Credential as _Cred
+                    cred = (await session.execute(select(_Cred).where(_Cred.id == profile.credential_id))).scalar_one_or_none()
+                    if cred is not None:
+                        connector.load_credentials(cred.credential_json)
+                runner = ConnectorRunner(connector, batch_size=10, include_permissions=False, time_range=(_dt.datetime.utcnow(), _dt.datetime.utcnow()))
+                # For MVP, attempt dummy checkpoint path if available, else load state
+                docs = []
+                try:
+                    batch_gen = runner.run(None)  # type: ignore[arg-type]
+                except Exception:
+                    batch_gen = []
+                for batch, failure, _ in batch_gen:  # type: ignore[assignment]
+                    if batch:
+                        docs.extend([d.model_dump(mode="json") for d in batch])
+                if not docs:
+                    docs.append({"id": profile.id, "raw_text": f"placeholder from {profile.source}"})
+        except Exception:
+            docs = [{"id": profile.id, "raw_text": "placeholder doc"}]
 
         dest_name = (profile.connector_config or {}).get("destination", "cleverbrag")
         dest_cls = get_destination(dest_name)

@@ -3,11 +3,30 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, ForeignKey, Integer
+from sqlalchemy import String, DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from backend.db.base import Base
+
+
+# ---------------------------
+# Connector credentials (MVP)
+# ---------------------------
+class Credential(Base):
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+
+    connector_name: Mapped[str] = mapped_column(String, nullable=False)
+    provider_key: Mapped[str] = mapped_column(String, nullable=False)  # stable key used for locking / identity
+    credential_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "user_id", "connector_name", "provider_key", name="uq_cred_org_user_name_key"),
+    )
 
 
 class Organization(Base):
@@ -83,4 +102,24 @@ class SyncRun(Base):
     status: Mapped[str] = mapped_column(String, default=SyncStatus.PENDING, nullable=False)
     records_synced: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    profile: Mapped["ConnectorProfile"] = relationship() 
+    profile: Mapped["ConnectorProfile"] = relationship()
+
+
+# ---------------------------
+# Destination Targets (MVP)
+# ---------------------------
+
+class DestinationTarget(Base):
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+
+    name: Mapped[str] = mapped_column(String, nullable=False)  # destination key, e.g. "cleverbrag"
+    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    config: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "user_id", "name", name="uq_target_org_user_name"),
+    ) 

@@ -12,6 +12,7 @@ import ProfileEdit from './ProfileEdit';
 import ProfilesList from './ProfilesList';
 import ProfileWizard from './ProfileWizard';
 import SyncRunsPage from './SyncRunsPage';
+import DestinationsPage from './Destinations';
 
 function Dashboard() {
   const { totalProfiles } = useDashboardStats();
@@ -46,6 +47,10 @@ export default function App() {
         <Route
           path="/profiles/:id/edit"
           element={accessToken ? <ProfileEdit /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/destinations"
+          element={accessToken ? <DestinationsPage /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

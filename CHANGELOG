@@ -249,3 +249,49 @@
 * Profiles routes: added no-trailing-slash variants to avoid 307 redirects that can confuse dev proxies or trigger CORS preflights.
 ### Changed
 * Vite proxy entries now use objects with `changeOrigin` and `secure:false` for more robust dev proxying.
+
+## 2025-08-10 (0.12.36)
+### Added
+* Destination config schema convention: `DestinationBase.config_schema()` returns JSON Schema for UI form generation.
+* CleverBrag destination now implements `config_schema` (fields: `api_key` required, `base_url` optional with default).
+* Backend endpoint `GET /destinations/definitions` to enumerate registered destinations and their schemas.
+
+## 2025-08-10 (0.12.37)
+### Added
+* Web: Destinations page to list available destinations from `/destinations/definitions` and render a minimal config form based on JSON Schema. Linked from TopNav.
+* Web hook `useDestinationDefinitions` to fetch destination schemas.
+
+## 2025-08-10 (0.12.38)
+### Fixed
+* Destination registry now auto-discovers and imports `backend/destinations/*` at startup so definitions are available to `/destinations/definitions` and the UI dropdown populates correctly.
+
+## 2025-08-10 (0.12.39)
+### Changed
+* Web API client now points to backend directly in dev (http://localhost:8000) unless overridden by `VITE_API_BASE`, avoiding proxy pitfalls for new endpoints.
+### Added
+* Destinations page now includes an Add Destination button placeholder for creating target instances (wiring to profile config planned next).
+
+## 2025-08-10 (0.12.40)
+### Added
+* DB: `DestinationTarget` model and Alembic migration.
+* API: `/targets` list + create endpoints.
+* Web: Destinations form now saves to `/targets` for the current org (from TopNav org selector).
+
+## 2025-08-10 (0.12.41)
+### Changed
+* Targets now require `user_id` (non-null) and enforce uniqueness per (`organization_id`, `user_id`, `name`).
+### Temporary
+* Front-end stores a placeholder `user_id` until a proper current-user endpoint is wired; replace soon with real user info.
+
+## 2025-08-10 (0.12.42)
+### Added
+* Web TopNav now includes a Profiles button for quick access to `/profiles`.
+### Fixed
+* All web API requests now include `X-Org-ID` from localStorage so org-scoped endpoints like `/profiles` return data instead of an empty list.
+
+## 2025-08-10 (0.12.43)
+### Added
+* Phase 6 plan in `TODO_CleverBrag_Integration`: Full connector parity with Onyx (discovery, credentials, OAuth, UI, orchestrator wiring, security).
+* DB model `Credential` and migration `20250810_05_credentials.py`.
+* Basic `/credentials` list/create API.
+* `GET /connectors/definitions` now enumerates Onyx connector sources.

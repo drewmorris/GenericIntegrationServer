@@ -15,6 +15,15 @@ class DestinationBase(ABC):
     async def send(self, *, payload: Iterable[Dict[str, Any]], profile_config: dict[str, Any]) -> None:  # noqa: D401
         ...
 
+    def config_schema(self) -> Dict[str, Any]:
+        return {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": getattr(self, "name", "destination"),
+            "type": "object",
+            "properties": {},
+            "required": [],
+        }
+
     # ------------------------------------------------------------------
     # Retry helper
     # ------------------------------------------------------------------

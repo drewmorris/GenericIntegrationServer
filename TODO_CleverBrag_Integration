@@ -193,12 +193,63 @@ Milestones
 □ CHANGELOG updated
 
 ────────────────────────────────────
-7.  Stretch Goals
+6. Connector Parity with Onyx (Week 6-8)
 ────────────────────────────────────
-• KeycloakAuthProvider implementation & migration guide
-• Usage-based billing integration (Stripe)
-• Versioned webhook API for downstream systems
-• Offline sync mode (Edge worker)
+Goal
+• Enable real Onyx connectors end-to-end including credentials (OAuth/static), config forms, and execution in our orchestrator.
+
+Scope
+• Discovery: enumerate available connectors and expose definitions + JSON Schemas
+• Credentials: DB model, encryption strategy, provider compatible with Onyx connectors
+• OAuth: generic start/callback endpoints; CSRF-safe state; PKCE where needed
+• UI: Connectors page to add credentials per connector; wizard selects credential
+• Orchestrator: instantiate Onyx connectors with selected credential and config
+• Security: redact secrets; never leak to client; rotate/refresh tokens
+
+Deliverables
+• DB models & migrations: `Credential` (org_id, user_id, connector_name, provider_key, encrypted credential_json)
+• API: `/connectors/definitions`, `/credentials` (list/create), `/oauth/{connector}/start`, `/oauth/{connector}/callback`
+• UI: Connectors page (list/add credentials), wizard selects connector + credential + config schema
+• Orchestrator: resolve `DocumentSource` + `credential_id` and run connector via Onyx runner
+• Tests: unit (provider), integration (static connector), e2e (OAuth flow happy path)
+
+────────────────────────────────────
+Gap Analysis (Legacy vs Current)
+────────────────────────────────────
+1) Credentials Storage
+- Legacy: Onyx DB credentials table and provider with locking, refresh & persistence
+- Current: Missing. Added `Credential` model + basic CRUD (no encryption yet)
+Action: add encryption-at-rest, secret redaction, Redis locks for provider
+
+2) OAuth Handling
+- Legacy: OAuthConnector contract, endpoints, state/PKCE, token exchange → credentials
+- Current: Missing. Need generic start/callback per connector
+Action: implement endpoints and map to connector’s OAuth class methods
+
+3) Connector Definitions & Schemas
+- Legacy: Pydantic config models surfaced to UI (JSON Schema)
+- Current: Minimal schemas; only destinations have proper schema surface
+Action: extract real schemas per connector (where available), include UI hints
+
+4) Orchestrator Integration
+- Legacy: instantiate connectors with credentials provider, run with InputType
+- Current: mock/doc fallback; not pulling credentials
+Action: wire `credential_id` into profile; fetch and pass to Onyx instantiation path
+
+5) Tenant Context
+- Legacy: contextvars-based tenant id used in many layers
+- Current: RLS set; partial contextvar bridging
+Action: set legacy tenant id consistently in web + worker contexts
+
+6) UI & UX
+- Legacy: account linking pages, connector lists, test connection, selection in flows
+- Current: wizard exists; destinations configured; connectors minimally listed
+Action: add Connectors page; pick credential in wizard; validate/test
+
+7) Security & Secrets
+- Legacy: encrypted storage; careful logging; rotation policies
+- Current: plain JSON storage in MVP
+Action: add encryption, masking, rotation endpoints/policies
 
 ────────────────────────────────────
 Conventions

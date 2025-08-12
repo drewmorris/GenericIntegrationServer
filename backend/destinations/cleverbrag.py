@@ -77,4 +77,19 @@ class CleverBragDestination(DestinationBase):
                 resp.raise_for_status()
                 logger.info("CleverBrag response: %s", resp.status_code)
 
-        await self._with_retry(_post) 
+        await self._with_retry(_post)
+
+    def config_schema(self) -> Dict[str, Any]:
+        return {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "CleverBrag",
+            "type": "object",
+            "properties": {
+                "base_url": {"type": "string", "title": "Base URL", "default": self.default_base_url},
+                "api_key": {"type": "string", "title": "API Key"},
+            },
+            "required": ["api_key"],
+            "uiSchema": {
+                "api_key": {"ui:widget": "password"}
+            },
+        } 

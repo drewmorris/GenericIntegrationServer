@@ -9,6 +9,7 @@ import {
   Typography,
   Button,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { useProfiles } from '../hooks/useProfiles';
 
@@ -22,7 +23,7 @@ export default function ProfilesList() {
       <Typography variant="h5" sx={{ mb: 2 }}>
         Connector Profiles
       </Typography>
-      <Button href="/profiles/new" variant="outlined" size="small" sx={{ mb: 2 }}>
+      <Button component={RouterLink} to="/profiles/new" variant="outlined" size="small" sx={{ mb: 2 }}>
         New Profile
       </Button>
       <Table size="small">
@@ -37,10 +38,10 @@ export default function ProfilesList() {
           {data?.map((p) => (
             <TableRow key={p.id} hover>
               <TableCell component="th" scope="row">
-                <a href={`/profiles/${p.id}/runs`}>{p.name}</a>
+                <RouterLink to={`/profiles/${p.id}/runs`}>{p.name}</RouterLink>
               </TableCell>
               <TableCell>
-                <a href={`/profiles/${p.id}/edit`}>Edit</a>
+                <RouterLink to={`/profiles/${p.id}/edit`}>Edit</RouterLink>
               </TableCell>
               <TableCell>{p.source}</TableCell>
               <TableCell>{p.interval_minutes}</TableCell>

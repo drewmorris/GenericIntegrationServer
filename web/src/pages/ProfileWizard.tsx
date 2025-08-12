@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Stepper,
   Step,
@@ -8,20 +8,35 @@ import {
   Container,
   MenuItem,
   Typography,
+  Stack,
+  Paper,
+  Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useSnack } from '../components/Snackbar';
 import { useCreateProfile } from '../hooks/useCreateProfile';
+import { useDestinationDefinitions } from '../hooks/useDestinations';
+import { useConnectorDefinitions } from '../hooks/useConnectors';
 
-const steps = ['Basics', 'Destination', 'Review'];
+const steps = ['Basics', 'Connector', 'Destination', 'Review'];
 
 export default function ProfileWizard() {
   const [activeStep, setActiveStep] = useState(0);
   const [name, setName] = useState('');
-  const [source] = useState('mock_source');
-  const [destination, setDestination] = useState('cleverbrag');
+
+  const { data: connectorDefs = [], isLoading: loadingConn, error: errorConn } = useConnectorDefinitions();
+  const { data: destinationDefs = [], isLoading: loadingDest, error: errorDest } = useDestinationDefinitions();
+
+  const [connector, setConnector] = useState<string>('mock_source');
+  const connDef = useMemo(() => connectorDefs.find((c) => c.name === connector) || connectorDefs[0], [connectorDefs, connector]);
+  const [connectorValues, setConnectorValues] = useState<Record<string, string>>({});
+
+  const [destination, setDestination] = useState<string>('cleverbrag');
+  const destDef = useMemo(() => destinationDefs.find((d) => d.name === destination) || destinationDefs[0], [destinationDefs, destination]);
+  const [destinationValues, setDestinationValues] = useState<Record<string, string>>({});
+
   const { mutateAsync, isPending } = useCreateProfile();
   const snack = useSnack();
   const navigate = useNavigate();
@@ -34,9 +49,13 @@ export default function ProfileWizard() {
         organization_id: orgId,
         user_id: userId,
         name,
-        source,
+        source: connector,
         interval_minutes: 60,
-        connector_config: { destination },
+        connector_config: {
+          destination,
+          [destination]: destinationValues,
+          [connector]: connectorValues,
+        },
       });
       navigate('/profiles');
       snack.enqueue('Profile created', { variant: 'success' });
@@ -45,6 +64,33 @@ export default function ProfileWizard() {
     }
   };
   const handleBack = () => setActiveStep((s) => s - 1);
+
+  if (loadingConn || loadingDest) return <Container maxWidth="sm" sx={{ mt: 4 }}><Typography>Loading…</Typography></Container>;
+  if (errorConn || errorDest) return <Container maxWidth="sm" sx={{ mt: 4 }}><Alert severity="error">Failed to load definitions</Alert></Container>;
+
+  const renderSchemaForm = (schema?: any, values?: Record<string, string>, setValues?: (fn: any) => void) => {
+    const props = schema?.properties ?? {};
+    const req = new Set<string>(schema?.required ?? []);
+    return (
+      <Stack spacing={2}>
+        {Object.entries(props).map(([key, meta]) => {
+          const m = meta as any;
+          const type = m.type === 'string' && m?.['ui:widget'] === 'password' ? 'password' : 'text';
+          return (
+            <TextField
+              key={key}
+              fullWidth
+              type={type}
+              label={m.title ?? key}
+              required={req.has(key)}
+              defaultValue={m.default ?? ''}
+              onChange={(e) => setValues && setValues((prev: any) => ({ ...prev, [key]: e.target.value }))}
+            />
+          );
+        })}
+      </Stack>
+    );
+  };
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
@@ -55,6 +101,7 @@ export default function ProfileWizard() {
           </Step>
         ))}
       </Stepper>
+
       {activeStep === 0 && (
         <TextField
           fullWidth
@@ -64,25 +111,49 @@ export default function ProfileWizard() {
           onChange={(e) => setName(e.target.value)}
         />
       )}
+
       {activeStep === 1 && (
-        <TextField
-          select
-          fullWidth
-          label="Destination"
-          margin="normal"
-          value={destination}
-          onChange={(e) => setDestination(e.target.value)}
-        >
-          <MenuItem value="cleverbrag">CleverBrag</MenuItem>
-          <MenuItem value="onyx">Onyx</MenuItem>
-          <MenuItem value="csv">CSV Dump</MenuItem>
-        </TextField>
+        <Paper sx={{ p: 2, mt: 2 }}>
+          <TextField
+            select
+            fullWidth
+            label="Connector"
+            margin="normal"
+            value={connector}
+            onChange={(e) => setConnector(e.target.value)}
+          >
+            {connectorDefs.map((c) => (
+              <MenuItem key={c.name} value={c.name}>{c.schema?.title ?? c.name}</MenuItem>
+            ))}
+          </TextField>
+          {renderSchemaForm(connDef?.schema, connectorValues, setConnectorValues)}
+        </Paper>
       )}
+
       {activeStep === 2 && (
+        <Paper sx={{ p: 2, mt: 2 }}>
+          <TextField
+            select
+            fullWidth
+            label="Destination"
+            margin="normal"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+          >
+            {destinationDefs.map((d) => (
+              <MenuItem key={d.name} value={d.name}>{d.schema?.title ?? d.name}</MenuItem>
+            ))}
+          </TextField>
+          {renderSchemaForm(destDef?.schema, destinationValues, setDestinationValues)}
+        </Paper>
+      )}
+
+      {activeStep === 3 && (
         <Typography sx={{ mt: 2 }}>
-          Ready to create profile "{name}" → {destination}
+          Ready to create profile "{name}" → {connector} → {destination}
         </Typography>
       )}
+
       <Button disabled={activeStep === 0} onClick={handleBack} sx={{ mt: 2, mr: 1 }}>
         Back
       </Button>

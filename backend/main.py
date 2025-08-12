@@ -5,6 +5,10 @@ from backend.routes import auth as auth_router
 from backend.routes import orchestrator as orch_router
 from backend.routes import sync_runs as runs_router
 from backend.routes import profiles as profiles_router
+from backend.routes import destinations as destinations_router
+from backend.routes import targets as targets_router
+from backend.routes import connectors as connectors_router
+from backend.routes import credentials as credentials_router
 
 app = FastAPI(
     title="Integration Server",
@@ -31,6 +35,10 @@ app.include_router(auth_router.router)
 app.include_router(orch_router.router)
 app.include_router(runs_router.router)
 app.include_router(profiles_router.router)
+app.include_router(destinations_router.router)
+app.include_router(targets_router.router)
+app.include_router(connectors_router.router)
+app.include_router(credentials_router.router)
 
 
 @app.get("/health", tags=["Health"])
