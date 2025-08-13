@@ -28,15 +28,30 @@ export default function ProfileWizard() {
   const [activeStep, setActiveStep] = useState(0);
   const [name, setName] = useState('');
 
-  const { data: connectorDefs = [], isLoading: loadingConn, error: errorConn } = useConnectorDefinitions();
-  const { data: destinationDefs = [], isLoading: loadingDest, error: errorDest } = useDestinationDefinitions();
+  const {
+    data: connectorDefs = [],
+    isLoading: loadingConn,
+    error: errorConn,
+  } = useConnectorDefinitions();
+  const {
+    data: destinationDefs = [],
+    isLoading: loadingDest,
+    error: errorDest,
+  } = useDestinationDefinitions();
 
   const [connector, setConnector] = useState<string>('mock_source');
-  const connDef = useMemo(() => connectorDefs.find((c) => c.name === connector) || connectorDefs[0], [connectorDefs, connector]);
+  const connDef = useMemo(
+    () => connectorDefs.find((c) => c.name === connector) || connectorDefs[0],
+    [connectorDefs, connector],
+  );
   const [connectorValues, setConnectorValues] = useState<Record<string, string>>({});
   const orgId = localStorage.getItem('org_id') ?? '';
   const userId = localStorage.getItem('user_id') ?? '';
-  const { data: creds = [] } = useCredentials({ organization_id: orgId, user_id: userId, connector_name: connector });
+  const { data: creds = [] } = useCredentials({
+    organization_id: orgId,
+    user_id: userId,
+    connector_name: connector,
+  });
   const [credentialId, setCredentialId] = useState<string>('');
   const testCredential = async () => {
     if (!credentialId) {
@@ -44,15 +59,22 @@ export default function ProfileWizard() {
       return;
     }
     try {
-      const { data } = await api.post<{ ok: boolean; detail?: string }>(`/credentials/${credentialId}/test`);
-      snack.enqueue(data.ok ? 'Credential OK' : `Credential failed: ${data.detail ?? 'unknown'}`, { variant: data.ok ? 'success' : 'error' });
+      const { data } = await api.post<{ ok: boolean; detail?: string }>(
+        `/credentials/${credentialId}/test`,
+      );
+      snack.enqueue(data.ok ? 'Credential OK' : `Credential failed: ${data.detail ?? 'unknown'}`, {
+        variant: data.ok ? 'success' : 'error',
+      });
     } catch {
       snack.enqueue('Credential test failed', { variant: 'error' });
     }
   };
 
   const [destination, setDestination] = useState<string>('cleverbrag');
-  const destDef = useMemo(() => destinationDefs.find((d) => d.name === destination) || destinationDefs[0], [destinationDefs, destination]);
+  const destDef = useMemo(
+    () => destinationDefs.find((d) => d.name === destination) || destinationDefs[0],
+    [destinationDefs, destination],
+  );
   const [destinationValues, setDestinationValues] = useState<Record<string, string>>({});
 
   const { mutateAsync, isPending } = useCreateProfile();
@@ -84,10 +106,24 @@ export default function ProfileWizard() {
   };
   const handleBack = () => setActiveStep((s) => s - 1);
 
-  if (loadingConn || loadingDest) return <Container maxWidth="sm" sx={{ mt: 4 }}><Typography>Loading…</Typography></Container>;
-  if (errorConn || errorDest) return <Container maxWidth="sm" sx={{ mt: 4 }}><Alert severity="error">Failed to load definitions</Alert></Container>;
+  if (loadingConn || loadingDest)
+    return (
+      <Container maxWidth="sm" sx={{ mt: 4 }}>
+        <Typography>Loading…</Typography>
+      </Container>
+    );
+  if (errorConn || errorDest)
+    return (
+      <Container maxWidth="sm" sx={{ mt: 4 }}>
+        <Alert severity="error">Failed to load definitions</Alert>
+      </Container>
+    );
 
-  const renderSchemaForm = (schema?: any, values?: Record<string, string>, setValues?: (fn: any) => void) => {
+  const renderSchemaForm = (
+    schema?: any,
+    values?: Record<string, string>,
+    setValues?: (fn: any) => void,
+  ) => {
     const props = schema?.properties ?? {};
     const req = new Set<string>(schema?.required ?? []);
     return (
@@ -103,7 +139,9 @@ export default function ProfileWizard() {
               label={m.title ?? key}
               required={req.has(key)}
               defaultValue={m.default ?? ''}
-              onChange={(e) => setValues && setValues((prev: any) => ({ ...prev, [key]: e.target.value }))}
+              onChange={(e) =>
+                setValues?.((prev: any) => ({ ...prev, [key]: e.target.value }))
+              }
             />
           );
         })}
@@ -142,7 +180,9 @@ export default function ProfileWizard() {
             onChange={(e) => setConnector(e.target.value)}
           >
             {connectorDefs.map((c) => (
-              <MenuItem key={c.name} value={c.name}>{c.schema?.title ?? c.name}</MenuItem>
+              <MenuItem key={c.name} value={c.name}>
+                {c.schema?.title ?? c.name}
+              </MenuItem>
             ))}
           </TextField>
           <TextField
@@ -152,14 +192,27 @@ export default function ProfileWizard() {
             margin="normal"
             value={credentialId}
             onChange={(e) => setCredentialId(e.target.value)}
-            helperText={creds.length ? 'Select an existing credential for this connector' : 'No credentials found; create one in Connectors page'}
+            helperText={
+              creds.length > 0
+                ? 'Select an existing credential for this connector'
+                : 'No credentials found; create one in Connectors page'
+            }
           >
             {creds.map((cr) => (
-              <MenuItem key={cr.id} value={cr.id}>{cr.provider_key}</MenuItem>
+              <MenuItem key={cr.id} value={cr.id}>
+                {cr.provider_key}
+              </MenuItem>
             ))}
           </TextField>
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined" size="small" onClick={testCredential} disabled={!credentialId}>Test Connection</Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={testCredential}
+              disabled={!credentialId}
+            >
+              Test Connection
+            </Button>
           </Stack>
           {renderSchemaForm(connDef?.schema, connectorValues, setConnectorValues)}
         </Paper>
@@ -176,7 +229,9 @@ export default function ProfileWizard() {
             onChange={(e) => setDestination(e.target.value)}
           >
             {destinationDefs.map((d) => (
-              <MenuItem key={d.name} value={d.name}>{d.schema?.title ?? d.name}</MenuItem>
+              <MenuItem key={d.name} value={d.name}>
+                {d.schema?.title ?? d.name}
+              </MenuItem>
             ))}
           </TextField>
           {renderSchemaForm(destDef?.schema, destinationValues, setDestinationValues)}

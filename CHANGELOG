@@ -316,3 +316,29 @@
 ## 2025-08-10 (0.12.48)
 ### Added
 * Persist connector checkpoints to `connectorprofile.checkpoint_json` when returned by the runner; adds migration `20250810_06_profile_checkpoint`.
+
+## 2025-08-10 (0.12.49)
+### Added
+* Credential management hardening:
+  - New fields on `credential`: `expires_at`, `last_refreshed_at`, `refresh_attempts`, `status`, `encryption_key_version`, `last_used_at`, `created_by_ip`, `updated_at`.
+  - New audit table `credential_audit_log` with indexes for (`credential_id`, `created_at`) and (`organization_id`, `created_at`).
+  - Alembic migration: `20250810_07_enhance_credential_management`.
+* Security & encryption:
+  - MultiFernet-based key management with versioning and rotation helpers: `encrypt_dict`, `maybe_decrypt_dict`, `needs_key_rotation`, `rotate_encryption`, `generate_new_key`, `validate_encryption_setup`.
+  - Config via `CREDENTIALS_SECRET_KEY` and optional historical keys `CREDENTIALS_SECRET_KEY_V2..Vn`.
+* Provider enhancements:
+  - `DBCredentialsProvider` now auto-rotates encryption on access, updates `last_used_at`, and writes audit logs for access/updates/refresh attempts; includes Redis-based locking.
+  - Refresh flow scaffolded (`_attempt_token_refresh`) with audit logging (connector-specific refresh still to be implemented per connector).
+* APIs:
+  - `/credentials` create now records metadata; responses include status/expiry fields.
+  - `/credentials/{id}/test` improves validation and marks credential `expired` on auth errors; adds `needs_refresh` flag.
+  - `/credentials/{id}/rotate` endpoint to manually rotate encryption.
+  - `/credentials/{id}/reveal` now audit-logged; still protected by `X-Admin-Secret`.
+  - New `/security` suite: `/security/encryption/status`, `/security/encryption/rotate-key`, `/security/credentials/rotate-all`, `/security/audit/credentials`, `/security/audit/credentials/stats`.
+* Logging:
+  - New `backend/security/audit.py` service for credential audit logging.
+* Tests:
+  - `tests/test_security_enhanced.py` covering crypto (rotation/versioning), audit logging, and credential provider behavior.
+
+### Changed
+* `backend/main.py` registers the new Security router.

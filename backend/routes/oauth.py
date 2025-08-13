@@ -149,7 +149,6 @@ async def oauth_callback(
     if stored:
         resolved_org = uuid.UUID(stored["organization_id"])  # type: ignore[arg-type]
         resolved_user = uuid.UUID(stored["user_id"])  # type: ignore[arg-type]
-        next_url = stored.get("next") if isinstance(stored, dict) else None
         code_verifier = stored.get("code_verifier") if isinstance(stored, dict) else None
     else:
         code_verifier = None

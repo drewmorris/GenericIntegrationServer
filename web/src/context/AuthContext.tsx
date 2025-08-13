@@ -34,7 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api
       .get('/auth/me', { headers: { Authorization: `Bearer ${access}` } })
       .then((resp) => {
-        const { user_id, organization_id } = resp.data as { user_id: string; organization_id: string };
+        const { user_id, organization_id } = resp.data as {
+          user_id: string;
+          organization_id: string;
+        };
         localStorage.setItem('user_id', user_id);
         localStorage.setItem('org_id', organization_id);
       })

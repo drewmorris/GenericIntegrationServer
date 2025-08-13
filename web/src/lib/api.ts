@@ -1,6 +1,7 @@
 import axios, { type AxiosError } from 'axios';
 
-const devBase = typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:8000' : '/';
+const devBase =
+  typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:8000' : '/';
 export const api = axios.create({ baseURL: (import.meta as any)?.env?.VITE_API_BASE || devBase });
 
 export function setupInterceptors(opts: {
@@ -15,7 +16,7 @@ export function setupInterceptors(opts: {
       config.headers.Authorization = `Bearer ${opts.accessToken}`;
     }
     // Attach org header if available
-    const orgId = typeof window !== 'undefined' ? localStorage.getItem('org_id') : null;
+    const orgId = typeof window === 'undefined' ? null : localStorage.getItem('org_id');
     if (orgId) {
       (config.headers as any)['X-Org-ID'] = orgId;
     }

@@ -23,7 +23,13 @@ export default function ProfilesList() {
       <Typography variant="h5" sx={{ mb: 2 }}>
         Connector Profiles
       </Typography>
-      <Button component={RouterLink} to="/profiles/new" variant="outlined" size="small" sx={{ mb: 2 }}>
+      <Button
+        component={RouterLink}
+        to="/profiles/new"
+        variant="outlined"
+        size="small"
+        sx={{ mb: 2 }}
+      >
         New Profile
       </Button>
       <Table size="small">
