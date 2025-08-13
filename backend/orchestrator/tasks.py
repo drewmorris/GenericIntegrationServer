@@ -47,7 +47,7 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
         # Real connector path using Onyx runtime when possible
         docs: list[dict]
         try:
-            import datetime as _dt
+            import datetime as _dt, json as _json
             from connectors.onyx.configs.constants import DocumentSource  # type: ignore
             from connectors.onyx.connectors.connector_runner import ConnectorRunner  # type: ignore
             from connectors.onyx.connectors.mock_connector.connector import MockConnector, MockConnectorCheckpoint  # type: ignore
@@ -68,7 +68,13 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
             else:
                 # Identify connector class by DocumentSource
                 src = getattr(DocumentSource, profile.source.upper())
-                connector_cls = identify_connector_class(src, InputType.LOAD_STATE)
+                # Pick a reasonable default InputType per source
+                def _select_input_type(source: str) -> InputType:
+                    polling = {"slack", "gmail", "zulip", "teams"}
+                    if source in polling:
+                        return InputType.POLL
+                    return InputType.LOAD_STATE
+                connector_cls = identify_connector_class(src, _select_input_type(profile.source))
                 # Supply connector-specific config (non-secret) from profile
                 conn_cfg = (profile.connector_config or {}).get(profile.source, {})
                 connector = connector_cls(**conn_cfg)
@@ -79,24 +85,41 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
                     with DBCredentialsProvider(tenant_id=str(org_id), connector_name=profile.source, credential_id=str(profile.credential_id), db=session) as prov:  # type: ignore[arg-type]
                         connector.load_credentials(prov.get_credentials())
                 runner = ConnectorRunner(connector, batch_size=10, include_permissions=False, time_range=(_dt.datetime.utcnow(), _dt.datetime.utcnow()))
-                # For MVP, attempt dummy checkpoint path if available, else load state
+                # Attempt to resume from saved checkpoint if connector supports it
                 docs = []
+                checkpoint_param = None
                 try:
-                    batch_gen = runner.run(None)  # type: ignore[arg-type]
+                    if getattr(profile, "checkpoint_json", None) and hasattr(connector, "validate_checkpoint_json"):
+                        checkpoint_param = connector.validate_checkpoint_json(_json.dumps(profile.checkpoint_json))  # type: ignore[attr-defined]
+                except Exception:
+                    checkpoint_param = None
+                try:
+                    batch_gen = runner.run(checkpoint_param)  # type: ignore[arg-type]
                 except Exception:
                     batch_gen = []
-                for batch, failure, _ in batch_gen:  # type: ignore[assignment]
+                last_checkpoint = None
+                for batch, failure, checkpoint in batch_gen:  # type: ignore[assignment]
+                    last_checkpoint = checkpoint
                     if batch:
                         docs.extend([d.model_dump(mode="json") for d in batch])
+                if last_checkpoint is not None:
+                    try:
+                        profile.checkpoint_json = last_checkpoint.model_dump()  # type: ignore[attr-defined]
+                        await session.commit()
+                    except Exception:
+                        await session.rollback()
                 if not docs:
                     docs.append({"id": profile.id, "raw_text": f"placeholder from {profile.source}"})
-        except Exception:
+        except Exception as e:
+            from backend.security.redact import mask_secrets
+            logger.error("Connector run failed for profile=%s source=%s error=%s", profile.id, profile.source, str(e))
             docs = [{"id": profile.id, "raw_text": "placeholder doc"}]
 
         dest_name = (profile.connector_config or {}).get("destination", "cleverbrag")
         dest_cls = get_destination(dest_name)
         dest = dest_cls()
         await dest.send(payload=docs, profile_config=profile.connector_config or {})
+        logger.info("Completed sync task profile=%s docs=%s", connector_profile_id, len(docs))
         return len(docs)
 
     coro = run_with_syncrow(

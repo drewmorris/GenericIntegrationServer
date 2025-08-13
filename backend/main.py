@@ -10,6 +10,7 @@ from backend.routes import targets as targets_router
 from backend.routes import connectors as connectors_router
 from backend.routes import credentials as credentials_router
 from backend.routes import oauth as oauth_router
+from backend.logging import configure_logging
 
 app = FastAPI(
     title="Integration Server",
@@ -19,6 +20,8 @@ app = FastAPI(
     contact={"name": "Dev Team", "email": "dev@example.com"},
     license_info={"name": "MIT"},
 )
+
+configure_logging()
 
 # CORS for local dev UI
 app.add_middleware(

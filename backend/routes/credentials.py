@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, status, Query, HTTPException
+from fastapi import APIRouter, Depends, status, Query, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -10,8 +10,12 @@ from backend.db import models as m
 from pydantic import BaseModel, Field
 import uuid
 from backend.security.crypto import encrypt_dict, maybe_decrypt_dict
+from backend.security.redact import mask_secrets
+import logging
+import os
 
 router = APIRouter(prefix="/credentials", tags=["Credentials"])
+logger = logging.getLogger(__name__)
 
 class CredentialCreate(BaseModel):
     organization_id: uuid.UUID
@@ -46,6 +50,7 @@ async def list_credentials(
         stmt = stmt.where(m.Credential.connector_name == connector_name)
     res = await db.execute(stmt)
     rows = list(res.scalars().all())
+    logger.info("credentials_list count=%s", len(rows))
     return rows
 
 @router.get("/{cred_id}")
@@ -53,6 +58,7 @@ async def get_credential(cred_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     row = await db.get(m.Credential, cred_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Credential not found")
+    logger.info("credential_get id=%s connector=%s", cred_id, row.connector_name)
     # Redact secret by default; return metadata and id only
     return {
         "id": str(row.id),
@@ -77,6 +83,7 @@ async def update_credential(cred_id: uuid.UUID, payload: CredentialUpdate, db: A
         row.credential_json = encrypt_dict(payload.credential_json)
     await db.commit()
     await db.refresh(row)
+    logger.info("credential_update id=%s fields=%s", cred_id, list(payload.model_dump(exclude_none=True).keys()))
     return row
 
 @router.delete("/{cred_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -86,6 +93,7 @@ async def delete_credential(cred_id: uuid.UUID, db: AsyncSession = Depends(get_d
         return
     await db.delete(row)
     await db.commit()
+    logger.info("credential_delete id=%s", cred_id)
     return
 
 class CredentialTestResult(BaseModel):
@@ -111,6 +119,31 @@ async def test_credential(cred_id: uuid.UUID, db: AsyncSession = Depends(get_db)
         # basic validation if exposed
         if hasattr(conn, 'validate_connector_settings'):
             conn.validate_connector_settings()
+        logger.info("credential_test id=%s ok=true", cred_id)
         return CredentialTestResult(ok=True)
     except Exception as exc:  # noqa: BLE001
-        return CredentialTestResult(ok=False, detail=str(exc)) 
+        logger.info("credential_test id=%s ok=false error=%s", cred_id, str(exc))
+        return CredentialTestResult(ok=False, detail=str(exc))
+
+
+@router.get("/{cred_id}/reveal")
+async def reveal_credential(
+    cred_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret"),
+) -> dict:
+    admin_key = os.getenv("ADMIN_API_KEY")
+    if not admin_key or x_admin_secret != admin_key:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    row = await db.get(m.Credential, cred_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Credential not found")
+    logger.info("credential_reveal id=%s", cred_id)
+    return {
+        "id": str(row.id),
+        "organization_id": str(row.organization_id),
+        "user_id": str(row.user_id),
+        "connector_name": row.connector_name,
+        "provider_key": row.provider_key,
+        "credential_json": maybe_decrypt_dict(row.credential_json),
+    } 

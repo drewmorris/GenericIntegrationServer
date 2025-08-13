@@ -7,6 +7,7 @@ import uuid
 import os
 import json
 from urllib.parse import urlparse
+import logging
 
 from connectors.onyx.configs.constants import DocumentSource  # type: ignore
 from connectors.onyx.connectors.interfaces import OAuthConnector  # type: ignore
@@ -22,6 +23,7 @@ except Exception:  # noqa: BLE001
     redis = None  # type: ignore
 
 router = APIRouter(prefix="/oauth", tags=["OAuth"])
+logger = logging.getLogger(__name__)
 
 _state_mem: dict[str, dict] = {}
 
@@ -104,6 +106,7 @@ async def oauth_start(
         _state_mem[state] = data
 
     auth_url = conn_cls.oauth_authorization_url(base_domain, state, additional_kwargs)
+    logger.info("oauth_start connector=%s org=%s user=%s next=%s method=%s", connector, organization_id, user_id, next, additional_kwargs.get("code_challenge_method"))
     return {"authorization_url": auth_url}
 
 
@@ -177,6 +180,7 @@ async def oauth_callback(
     db.add(cred)
     await db.commit()
     await db.refresh(cred)
+    logger.info("oauth_callback connector=%s org=%s user=%s credential_id=%s", connector, resolved_org, resolved_user, cred.id)
     if stored and isinstance(stored, dict) and stored.get("next"):
         # Redirect back to UI with credential_id
         if _is_allowed(stored["next"]):

@@ -20,6 +20,7 @@ import { useCreateProfile } from '../hooks/useCreateProfile';
 import { useDestinationDefinitions } from '../hooks/useDestinations';
 import { useConnectorDefinitions } from '../hooks/useConnectors';
 import { useCredentials } from '../hooks/useCredentials';
+import { api } from '../lib/api';
 
 const steps = ['Basics', 'Connector', 'Destination', 'Review'];
 
@@ -37,6 +38,18 @@ export default function ProfileWizard() {
   const userId = localStorage.getItem('user_id') ?? '';
   const { data: creds = [] } = useCredentials({ organization_id: orgId, user_id: userId, connector_name: connector });
   const [credentialId, setCredentialId] = useState<string>('');
+  const testCredential = async () => {
+    if (!credentialId) {
+      snack.enqueue('Select a credential first', { variant: 'info' });
+      return;
+    }
+    try {
+      const { data } = await api.post<{ ok: boolean; detail?: string }>(`/credentials/${credentialId}/test`);
+      snack.enqueue(data.ok ? 'Credential OK' : `Credential failed: ${data.detail ?? 'unknown'}`, { variant: data.ok ? 'success' : 'error' });
+    } catch {
+      snack.enqueue('Credential test failed', { variant: 'error' });
+    }
+  };
 
   const [destination, setDestination] = useState<string>('cleverbrag');
   const destDef = useMemo(() => destinationDefs.find((d) => d.name === destination) || destinationDefs[0], [destinationDefs, destination]);
@@ -145,6 +158,9 @@ export default function ProfileWizard() {
               <MenuItem key={cr.id} value={cr.id}>{cr.provider_key}</MenuItem>
             ))}
           </TextField>
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" size="small" onClick={testCredential} disabled={!credentialId}>Test Connection</Button>
+          </Stack>
           {renderSchemaForm(connDef?.schema, connectorValues, setConnectorValues)}
         </Paper>
       )}

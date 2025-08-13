@@ -308,3 +308,11 @@
 ## 2025-08-10 (0.12.46)
 ### Added
 * Set legacy tenant contextvar before connector runs to maximize compatibility with Onyx internals.
+
+## 2025-08-10 (0.12.47)
+### Changed
+* Orchestrator selects a default InputType per connector source (POLL for chat/email connectors, LOAD_STATE otherwise) instead of always LOAD_STATE.
+
+## 2025-08-10 (0.12.48)
+### Added
+* Persist connector checkpoints to `connectorprofile.checkpoint_json` when returned by the runner; adds migration `20250810_06_profile_checkpoint`.

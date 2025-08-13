@@ -78,6 +78,7 @@ class ConnectorProfile(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     source: Mapped[str] = mapped_column(String, nullable=False)
     connector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    checkpoint_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
