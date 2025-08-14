@@ -342,3 +342,11 @@
 
 ### Changed
 * `backend/main.py` registers the new Security router.
+
+## 2025-08-11 (0.12.50)
+### Added
+* New TODO document `TODO/TODO_FULL_PARITY` capturing full connectors and profiles parity analysis vs LegacyCode, with prioritized action items.
+
+## 2025-08-10 (0.12.27)
+- Devcontainer installs Poetry and exports POETRY_VIRTUALENVS_CREATE=false for editable installs into the container site-packages.
+- postCreateCommand now prefers `poetry install --no-root --with dev` when Poetry is available, otherwise falls back to `pip install -e .`. Web dependencies still installed via npm in `web/`.

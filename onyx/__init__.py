@@ -45,6 +45,16 @@ sys.modules["onyx.connectors"] = _imp.import_module("connectors.onyx.connectors"
 # configs.constants stub
 _configs_pkg = _ensure("onyx.configs")
 _configs_constants = _ensure("onyx.configs.constants")
+_configs_app = _ensure("onyx.configs.app_configs")
+_file_processing = _ensure("onyx.file_processing")
+_eft_mod = _ensure("onyx.file_processing.extract_file_text")
+def extract_file_text(*_a, **_k):  # type: ignore
+    return ""
+_eft_mod.extract_file_text = extract_file_text  # type: ignore[attr-defined]
+def get_file_ext(path: str) -> str:  # type: ignore
+    import os as _os
+    return _os.path.splitext(path)[1].lower()
+_eft_mod.get_file_ext = get_file_ext  # type: ignore[attr-defined]
 
 class DocumentSource(str):  # noqa: D401
     INGESTION_API = "ingestion_api"
@@ -59,6 +69,11 @@ setattr(sys.modules[__name__], "DocumentSource", DocumentSource)
 _configs_constants.INDEX_SEPARATOR = "::"  # type: ignore[attr-defined]
 _configs_constants.PUBLIC_DOC_PAT = r"public"  # type: ignore[attr-defined]
 _configs_constants.RETURN_SEPARATOR = "__RETURN__"  # type: ignore[attr-defined] 
+
+# app_configs stub
+_configs_app.INTEGRATION_TESTS_MODE = True  # type: ignore[attr-defined]
+# other app configs used by connectors
+_configs_app.INDEX_BATCH_SIZE = 100  # type: ignore[attr-defined]
 
 # utils.text_processing stub
 _utils = _ensure("onyx.utils")

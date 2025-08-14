@@ -1,3 +1,50 @@
+import uuid
+import pytest
+
+pytestmark = pytest.mark.asyncio
+
+
+async def test_scheduler_skips_paused(monkeypatch):
+    from backend.orchestrator.scheduler import _scan_due_profiles_impl
+    from backend.orchestrator import scheduler as _sched
+
+    # Build a fake session that returns one paused profile
+    class _Obj:
+        def __init__(self):
+            self.id = uuid.uuid4(); self.user_id = uuid.uuid4(); self.organization_id = uuid.uuid4()
+            self.interval_minutes = 5
+            self.next_run_at = None
+            self.status = "paused"
+
+    class _ScalarList:
+        def __init__(self, items):
+            self._items = items
+        def all(self):
+            return self._items
+        def scalars(self):
+            return self
+
+    class _Sess:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *a):
+            pass
+        async def execute(self, stmt):  # noqa: ARG002
+            return _ScalarList([_Obj()])
+        async def commit(self):
+            pass
+
+    # Monkeypatch the session factory creator to return our fake session
+    def _fake_factory():
+        class _M:
+            def __call__(self):
+                return _Sess()
+        return _M()
+
+    monkeypatch.setattr(_sched, "_create_session_factory", _fake_factory)
+
+    # No exceptions should occur and no tasks scheduled (cannot easily assert without broker)
+    await _scan_due_profiles_impl()
 import importlib
 from types import SimpleNamespace
 

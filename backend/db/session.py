@@ -29,7 +29,7 @@ AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 )
 
 
-async def get_db(org_id: Annotated[uuid.UUID, Depends(get_org_id)] | None = None) -> AsyncGenerator[AsyncSession, None]:  # noqa: D401
+async def get_db(org_id: uuid.UUID | None = Depends(get_org_id)) -> AsyncGenerator[AsyncSession, None]:  # noqa: D401
     async with AsyncSessionLocal() as session:
         if org_id is not None:
             await set_current_org(session, org_id)

@@ -24,9 +24,7 @@ function randState(): string {
     if (c?.getRandomValues) {
       const arr = new Uint8Array(16);
       c.getRandomValues(arr);
-      return [...arr]
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
+      return [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
     }
   } catch {}
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);

@@ -139,9 +139,7 @@ export default function ProfileWizard() {
               label={m.title ?? key}
               required={req.has(key)}
               defaultValue={m.default ?? ''}
-              onChange={(e) =>
-                setValues?.((prev: any) => ({ ...prev, [key]: e.target.value }))
-              }
+              onChange={(e) => setValues?.((prev: any) => ({ ...prev, [key]: e.target.value }))}
             />
           );
         })}

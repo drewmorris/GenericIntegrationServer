@@ -70,6 +70,8 @@ def _sample_payload(org_id, user_id):
         "source": "mock_source",
         "connector_config": {"k": "v"},
         "interval_minutes": 5,
+        "credential_id": str(uuid.uuid4()),
+        "status": "active",
     }
 
 
@@ -91,6 +93,31 @@ def test_profile_crud(client):
     resp = c.get(f"/profiles/{prof_id}", headers={"X-Org-ID": str(org_id)})
     assert resp.status_code == 200 and resp.json()["id"] == prof_id
 
-    # patch
-    resp = c.patch(f"/profiles/{prof_id}", json={"interval_minutes": 30}, headers={"X-Org-ID": str(org_id)})
-    assert resp.status_code == 200 and resp.json()["interval_minutes"] == 30 
+    # patch (interval + pause)
+    resp = c.patch(f"/profiles/{prof_id}", json={"interval_minutes": 30, "status": "paused"}, headers={"X-Org-ID": str(org_id)})
+    assert resp.status_code == 200 and resp.json()["interval_minutes"] == 30 and resp.json()["status"] == "paused"
+
+def test_run_now_and_list_runs_route_smoke(client, monkeypatch):
+    c, db = client
+    org_id = uuid.uuid4(); user_id = uuid.uuid4()
+    # create
+    resp = c.post("/profiles/", json=_sample_payload(org_id, user_id), headers={"X-Org-ID": str(org_id)})
+    assert resp.status_code == 201
+    prof_id = resp.json()["id"]
+
+    # monkeypatch task.delay to avoid importing celery during unit tests
+    class _DummyTask:
+        def __init__(self):
+            self.id = "task-1"
+    def _fake_delay(a, b, c):
+        return _DummyTask()
+    from backend.orchestrator import tasks as _tasks_mod
+    monkeypatch.setattr(_tasks_mod.sync_connector, "delay", _fake_delay)
+
+    # run-now
+    resp = c.post(f"/profiles/{prof_id}/run", headers={"X-Org-ID": str(org_id)})
+    assert resp.status_code == 202 and resp.json()["task_id"] == "task-1"
+
+    # list runs (empty with fake db session)
+    resp = c.get(f"/profiles/{prof_id}/runs", headers={"X-Org-ID": str(org_id)})
+    assert resp.status_code == 200 and isinstance(resp.json(), list)

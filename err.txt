@@ -1,0 +1,1957 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.13, pytest-8.1.1, pluggy-1.6.0
+rootdir: /workspaces/GenericIntegrationServer
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.10.0, cov-4.1.0, asyncio-0.23.5
+asyncio: mode=Mode.STRICT
+collected 45 items / 3 skipped
+
+tests/connector_runtime/test_mock_connector.py .                         [  2%]
+tests/integration/test_checkpoint_persistence.py F                       [  4%]
+tests/integration/test_checkpoint_stub.py F                              [  6%]
+tests/integration/test_csvdump_destination.py F                          [  8%]
+tests/integration/test_file_connector_csvdump.py F                       [ 11%]
+tests/orchestrator/test_retry_policy.py .                                [ 13%]
+tests/orchestrator/test_sync_connector.py .                              [ 15%]
+tests/test_auth.py .                                                     [ 17%]
+tests/test_cleverbrag_destination.py .                                   [ 20%]
+tests/test_connector_import.py .                                         [ 22%]
+tests/test_deps.py ...                                                   [ 28%]
+tests/test_destinations_csvdump.py .                                     [ 31%]
+tests/test_destinations_onyx.py ..                                       [ 35%]
+tests/test_health.py .                                                   [ 37%]
+tests/test_oauth_utils.py ..                                             [ 42%]
+tests/test_profiles.py FF                                                [ 46%]
+tests/test_scheduler.py ..                                               [ 51%]
+tests/test_security_crypto.py ..                                         [ 55%]
+tests/test_security_enhanced.py .................                        [ 93%]
+tests/test_task_utils.py ..                                              [ 97%]
+tests/test_tasks.py .                                                    [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_checkpoint_persisted ___________________________
+
+event_loop = None
+
+    def test_checkpoint_persisted(event_loop=None):
+        async def _run():
+            async with AsyncSessionLocal() as session:
+                profile = await create_profile(session)
+                # Run sync task (will generate docs and placeholder checkpoint if any)
+                sync_connector.apply(args=[str(profile.id), str(profile.user_id), str(profile.organization_id)])
+                # Reload profile and assert checkpoint persisted or placeholder run occurred without error
+                refreshed = (await session.execute(select(m.ConnectorProfile).where(m.ConnectorProfile.id == profile.id))).scalar_one()
+                # mock_source path currently sets placeholder doc; checkpoint may be None
+                assert refreshed is not None
+>       asyncio.get_event_loop().run_until_complete(_run())
+
+tests/integration/test_checkpoint_persistence.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+tests/integration/test_checkpoint_persistence.py:31: in _run
+    profile = await create_profile(session)
+tests/integration/test_checkpoint_persistence.py:23: in create_profile
+    await session.commit()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2017: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1302: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1277: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4341: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4476: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4437: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
+    for (
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1753: in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+<string>:2: in connection
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1039: in connection
+    return self._connection_for_bind(bind, execution_options)
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1175: in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3276: in connect
+    return self._connection_cls(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3300: in raw_connection
+    return self.pool.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1263: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:712: in checkout
+    rec = pool._do_get()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:179: in _do_get
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:177: in _do_get
+    return self._create_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:390: in _create_connection
+    return _ConnectionRecord(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:674: in __init__
+    self.__connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:900: in __connect
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/create.py:643: in connect
+    return dialect.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:620: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:937: in connect
+    await_only(creator_fn(*arg, **kw)),
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:131: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/asyncpg/connection.py:2329: in connect
+    return await connect_utils._connect(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:1017: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:991: in _connect
+    conn = await _connect_addr(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:828: in _connect_addr
+    return await __connect_addr(params, True, *args)
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:873: in __connect_addr
+    tr, pr = await connector
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:744: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+protocol_factory = <function _create_ssl_connection.<locals>.<lambda> at 0x7f1a16a005e0>
+host = 'localhost', port = 5432
+
+    async def create_connection(
+            self, protocol_factory, host=None, port=None,
+            *, ssl=None, family=0,
+            proto=0, flags=0, sock=None,
+            local_addr=None, server_hostname=None,
+            ssl_handshake_timeout=None,
+            ssl_shutdown_timeout=None,
+            happy_eyeballs_delay=None, interleave=None):
+        """Connect to a TCP server.
+    
+        Create a streaming transport connection to a given internet host and
+        port: socket family AF_INET or socket.AF_INET6 depending on host (or
+        family if specified), socket type SOCK_STREAM. protocol_factory must be
+        a callable returning a protocol instance.
+    
+        This method is a coroutine which will try to establish the connection
+        in the background.  When successful, the coroutine returns a
+        (transport, protocol) pair.
+        """
+        if server_hostname is not None and not ssl:
+            raise ValueError('server_hostname is only meaningful with ssl')
+    
+        if server_hostname is None and ssl:
+            # Use host as default for server_hostname.  It is an error
+            # if host is empty or not set, e.g. when an
+            # already-connected socket was passed or when only a port
+            # is given.  To avoid this error, you can pass
+            # server_hostname='' -- this will bypass the hostname
+            # check.  (This also means that if host is a numeric
+            # IP/IPv6 address, we will attempt to verify that exact
+            # address; this will probably fail, but it is possible to
+            # create a certificate for a specific IP address, so we
+            # don't judge it here.)
+            if not host:
+                raise ValueError('You must set server_hostname '
+                                 'when using ssl without a host')
+            server_hostname = host
+    
+        if ssl_handshake_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_handshake_timeout is only meaningful with ssl')
+    
+        if ssl_shutdown_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_shutdown_timeout is only meaningful with ssl')
+    
+        if sock is not None:
+            _check_ssl_socket(sock)
+    
+        if happy_eyeballs_delay is not None and interleave is None:
+            # If using happy eyeballs, default to interleave addresses by family
+            interleave = 1
+    
+        if host is not None or port is not None:
+            if sock is not None:
+                raise ValueError(
+                    'host/port and sock can not be specified at the same time')
+    
+            infos = await self._ensure_resolved(
+                (host, port), family=family,
+                type=socket.SOCK_STREAM, proto=proto, flags=flags, loop=self)
+            if not infos:
+                raise OSError('getaddrinfo() returned empty list')
+    
+            if local_addr is not None:
+                laddr_infos = await self._ensure_resolved(
+                    local_addr, family=family,
+                    type=socket.SOCK_STREAM, proto=proto,
+                    flags=flags, loop=self)
+                if not laddr_infos:
+                    raise OSError('getaddrinfo() returned empty list')
+            else:
+                laddr_infos = None
+    
+            if interleave:
+                infos = _interleave_addrinfos(infos, interleave)
+    
+            exceptions = []
+            if happy_eyeballs_delay is None:
+                # not using happy eyeballs
+                for addrinfo in infos:
+                    try:
+                        sock = await self._connect_sock(
+                            exceptions, addrinfo, laddr_infos)
+                        break
+                    except OSError:
+                        continue
+            else:  # using happy eyeballs
+                sock, _, _ = await staggered.staggered_race(
+                    (functools.partial(self._connect_sock,
+                                       exceptions, addrinfo, laddr_infos)
+                     for addrinfo in infos),
+                    happy_eyeballs_delay, loop=self)
+    
+            if sock is None:
+                exceptions = [exc for sub in exceptions for exc in sub]
+                try:
+                    if len(exceptions) == 1:
+                        raise exceptions[0]
+                    else:
+                        # If they all have the same str(), raise one.
+                        model = str(exceptions[0])
+                        if all(str(exc) == model for exc in exceptions):
+                            raise exceptions[0]
+                        # Raise a combined exception so the user can see all
+                        # the various error messages.
+>                       raise OSError('Multiple exceptions: {}'.format(
+                            ', '.join(str(exc) for exc in exceptions)))
+E                           OSError: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+
+/usr/local/lib/python3.11/asyncio/base_events.py:1094: OSError
+_______________________ test_stub_checkpoint_persistence _______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1a14ea6550>
+
+    def test_stub_checkpoint_persistence(monkeypatch):
+    	# Monkeypatch the onyx modules used by orchestrator
+    	factory_mod = types.ModuleType('connectors.onyx.connectors.factory')
+    	def _identify(source, *args, **kwargs):
+    		return _StubConnector
+    	factory_mod.identify_connector_class = _identify
+    	sys.modules['connectors.onyx.connectors.factory'] = factory_mod
+    
+    	runner_mod = types.ModuleType('connectors.onyx.connectors.connector_runner')
+    	runner_mod.ConnectorRunner = _StubRunner
+    	sys.modules['connectors.onyx.connectors.connector_runner'] = runner_mod
+    
+    	const_mod = types.ModuleType('connectors.onyx.configs.constants')
+    	class _DS(str):
+    		pass
+    	def _getattr(name):
+    		return type('DS', (), {'value': 'test_stub'})
+    	class _DocumentSource:
+    		TEST_STUB = 'test_stub'
+    	const_mod.DocumentSource = type('DocumentSource', (), {})
+    	setattr(const_mod.DocumentSource, 'TEST_STUB', 'test_stub')
+    	def _docsrc_getattr(attr):
+    		return 'test_stub'
+    	setattr(const_mod, 'DocumentSource', types.SimpleNamespace(**{'TEST_STUB': 'test_stub'}))
+    	# get attribute upper lookup will map to 'TEST_STUB'
+    	sys.modules['connectors.onyx.configs.constants'] = const_mod
+    
+    	async def _run():
+    		async with AsyncSessionLocal() as session:
+    			profile = await _create_profile(session)
+    			# Run sync task
+    			sync_connector.apply(args=[str(profile.id), str(profile.user_id), str(profile.organization_id)])
+    			refreshed = (await session.execute(select(m.ConnectorProfile).where(m.ConnectorProfile.id == profile.id))).scalar_one()
+    			assert refreshed.checkpoint_json is not None
+    			assert refreshed.checkpoint_json.get('val') == 'next'
+>   	asyncio.get_event_loop().run_until_complete(_run())
+
+tests/integration/test_checkpoint_stub.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+tests/integration/test_checkpoint_stub.py:85: in _run
+    profile = await _create_profile(session)
+tests/integration/test_checkpoint_stub.py:51: in _create_profile
+    await session.commit()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2017: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1302: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1277: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4341: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4476: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4437: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
+    for (
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1753: in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+<string>:2: in connection
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1039: in connection
+    return self._connection_for_bind(bind, execution_options)
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1175: in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3276: in connect
+    return self._connection_cls(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3300: in raw_connection
+    return self.pool.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1263: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:712: in checkout
+    rec = pool._do_get()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:179: in _do_get
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:177: in _do_get
+    return self._create_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:390: in _create_connection
+    return _ConnectionRecord(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:674: in __init__
+    self.__connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:900: in __connect
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/create.py:643: in connect
+    return dialect.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:620: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:937: in connect
+    await_only(creator_fn(*arg, **kw)),
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:131: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/asyncpg/connection.py:2329: in connect
+    return await connect_utils._connect(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:1017: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:991: in _connect
+    conn = await _connect_addr(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:828: in _connect_addr
+    return await __connect_addr(params, True, *args)
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:873: in __connect_addr
+    tr, pr = await connector
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:744: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+protocol_factory = <function _create_ssl_connection.<locals>.<lambda> at 0x7f1a16bdaa20>
+host = 'localhost', port = 5432
+
+    async def create_connection(
+            self, protocol_factory, host=None, port=None,
+            *, ssl=None, family=0,
+            proto=0, flags=0, sock=None,
+            local_addr=None, server_hostname=None,
+            ssl_handshake_timeout=None,
+            ssl_shutdown_timeout=None,
+            happy_eyeballs_delay=None, interleave=None):
+        """Connect to a TCP server.
+    
+        Create a streaming transport connection to a given internet host and
+        port: socket family AF_INET or socket.AF_INET6 depending on host (or
+        family if specified), socket type SOCK_STREAM. protocol_factory must be
+        a callable returning a protocol instance.
+    
+        This method is a coroutine which will try to establish the connection
+        in the background.  When successful, the coroutine returns a
+        (transport, protocol) pair.
+        """
+        if server_hostname is not None and not ssl:
+            raise ValueError('server_hostname is only meaningful with ssl')
+    
+        if server_hostname is None and ssl:
+            # Use host as default for server_hostname.  It is an error
+            # if host is empty or not set, e.g. when an
+            # already-connected socket was passed or when only a port
+            # is given.  To avoid this error, you can pass
+            # server_hostname='' -- this will bypass the hostname
+            # check.  (This also means that if host is a numeric
+            # IP/IPv6 address, we will attempt to verify that exact
+            # address; this will probably fail, but it is possible to
+            # create a certificate for a specific IP address, so we
+            # don't judge it here.)
+            if not host:
+                raise ValueError('You must set server_hostname '
+                                 'when using ssl without a host')
+            server_hostname = host
+    
+        if ssl_handshake_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_handshake_timeout is only meaningful with ssl')
+    
+        if ssl_shutdown_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_shutdown_timeout is only meaningful with ssl')
+    
+        if sock is not None:
+            _check_ssl_socket(sock)
+    
+        if happy_eyeballs_delay is not None and interleave is None:
+            # If using happy eyeballs, default to interleave addresses by family
+            interleave = 1
+    
+        if host is not None or port is not None:
+            if sock is not None:
+                raise ValueError(
+                    'host/port and sock can not be specified at the same time')
+    
+            infos = await self._ensure_resolved(
+                (host, port), family=family,
+                type=socket.SOCK_STREAM, proto=proto, flags=flags, loop=self)
+            if not infos:
+                raise OSError('getaddrinfo() returned empty list')
+    
+            if local_addr is not None:
+                laddr_infos = await self._ensure_resolved(
+                    local_addr, family=family,
+                    type=socket.SOCK_STREAM, proto=proto,
+                    flags=flags, loop=self)
+                if not laddr_infos:
+                    raise OSError('getaddrinfo() returned empty list')
+            else:
+                laddr_infos = None
+    
+            if interleave:
+                infos = _interleave_addrinfos(infos, interleave)
+    
+            exceptions = []
+            if happy_eyeballs_delay is None:
+                # not using happy eyeballs
+                for addrinfo in infos:
+                    try:
+                        sock = await self._connect_sock(
+                            exceptions, addrinfo, laddr_infos)
+                        break
+                    except OSError:
+                        continue
+            else:  # using happy eyeballs
+                sock, _, _ = await staggered.staggered_race(
+                    (functools.partial(self._connect_sock,
+                                       exceptions, addrinfo, laddr_infos)
+                     for addrinfo in infos),
+                    happy_eyeballs_delay, loop=self)
+    
+            if sock is None:
+                exceptions = [exc for sub in exceptions for exc in sub]
+                try:
+                    if len(exceptions) == 1:
+                        raise exceptions[0]
+                    else:
+                        # If they all have the same str(), raise one.
+                        model = str(exceptions[0])
+                        if all(str(exc) == model for exc in exceptions):
+                            raise exceptions[0]
+                        # Raise a combined exception so the user can see all
+                        # the various error messages.
+>                       raise OSError('Multiple exceptions: {}'.format(
+                            ', '.join(str(exc) for exc in exceptions)))
+E                           OSError: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+
+/usr/local/lib/python3.11/asyncio/base_events.py:1094: OSError
+___________________________ test_csvdump_writes_file ___________________________
+
+    def test_csvdump_writes_file():
+    	async def _run():
+    		with tempfile.TemporaryDirectory() as tmp:
+    			async with AsyncSessionLocal() as session:
+    				profile = await _create_profile(session, tmp)
+    				sync_connector.apply(args=[str(profile.id), str(profile.user_id), str(profile.organization_id)])
+    				files = list(Path(tmp).glob('*.json'))
+    				assert len(files) >= 1
+>   	asyncio.get_event_loop().run_until_complete(_run())
+
+tests/integration/test_csvdump_destination.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+tests/integration/test_csvdump_destination.py:38: in _run
+    profile = await _create_profile(session, tmp)
+tests/integration/test_csvdump_destination.py:29: in _create_profile
+    await session.commit()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2017: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1302: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1277: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4341: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4476: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4437: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
+    for (
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1753: in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+<string>:2: in connection
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1039: in connection
+    return self._connection_for_bind(bind, execution_options)
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1175: in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3276: in connect
+    return self._connection_cls(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3300: in raw_connection
+    return self.pool.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1263: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:712: in checkout
+    rec = pool._do_get()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:179: in _do_get
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:177: in _do_get
+    return self._create_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:390: in _create_connection
+    return _ConnectionRecord(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:674: in __init__
+    self.__connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:900: in __connect
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/create.py:643: in connect
+    return dialect.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:620: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:937: in connect
+    await_only(creator_fn(*arg, **kw)),
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:131: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/asyncpg/connection.py:2329: in connect
+    return await connect_utils._connect(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:1017: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:991: in _connect
+    conn = await _connect_addr(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:828: in _connect_addr
+    return await __connect_addr(params, True, *args)
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:873: in __connect_addr
+    tr, pr = await connector
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:744: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+protocol_factory = <function _create_ssl_connection.<locals>.<lambda> at 0x7f1a16a02f20>
+host = 'localhost', port = 5432
+
+    async def create_connection(
+            self, protocol_factory, host=None, port=None,
+            *, ssl=None, family=0,
+            proto=0, flags=0, sock=None,
+            local_addr=None, server_hostname=None,
+            ssl_handshake_timeout=None,
+            ssl_shutdown_timeout=None,
+            happy_eyeballs_delay=None, interleave=None):
+        """Connect to a TCP server.
+    
+        Create a streaming transport connection to a given internet host and
+        port: socket family AF_INET or socket.AF_INET6 depending on host (or
+        family if specified), socket type SOCK_STREAM. protocol_factory must be
+        a callable returning a protocol instance.
+    
+        This method is a coroutine which will try to establish the connection
+        in the background.  When successful, the coroutine returns a
+        (transport, protocol) pair.
+        """
+        if server_hostname is not None and not ssl:
+            raise ValueError('server_hostname is only meaningful with ssl')
+    
+        if server_hostname is None and ssl:
+            # Use host as default for server_hostname.  It is an error
+            # if host is empty or not set, e.g. when an
+            # already-connected socket was passed or when only a port
+            # is given.  To avoid this error, you can pass
+            # server_hostname='' -- this will bypass the hostname
+            # check.  (This also means that if host is a numeric
+            # IP/IPv6 address, we will attempt to verify that exact
+            # address; this will probably fail, but it is possible to
+            # create a certificate for a specific IP address, so we
+            # don't judge it here.)
+            if not host:
+                raise ValueError('You must set server_hostname '
+                                 'when using ssl without a host')
+            server_hostname = host
+    
+        if ssl_handshake_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_handshake_timeout is only meaningful with ssl')
+    
+        if ssl_shutdown_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_shutdown_timeout is only meaningful with ssl')
+    
+        if sock is not None:
+            _check_ssl_socket(sock)
+    
+        if happy_eyeballs_delay is not None and interleave is None:
+            # If using happy eyeballs, default to interleave addresses by family
+            interleave = 1
+    
+        if host is not None or port is not None:
+            if sock is not None:
+                raise ValueError(
+                    'host/port and sock can not be specified at the same time')
+    
+            infos = await self._ensure_resolved(
+                (host, port), family=family,
+                type=socket.SOCK_STREAM, proto=proto, flags=flags, loop=self)
+            if not infos:
+                raise OSError('getaddrinfo() returned empty list')
+    
+            if local_addr is not None:
+                laddr_infos = await self._ensure_resolved(
+                    local_addr, family=family,
+                    type=socket.SOCK_STREAM, proto=proto,
+                    flags=flags, loop=self)
+                if not laddr_infos:
+                    raise OSError('getaddrinfo() returned empty list')
+            else:
+                laddr_infos = None
+    
+            if interleave:
+                infos = _interleave_addrinfos(infos, interleave)
+    
+            exceptions = []
+            if happy_eyeballs_delay is None:
+                # not using happy eyeballs
+                for addrinfo in infos:
+                    try:
+                        sock = await self._connect_sock(
+                            exceptions, addrinfo, laddr_infos)
+                        break
+                    except OSError:
+                        continue
+            else:  # using happy eyeballs
+                sock, _, _ = await staggered.staggered_race(
+                    (functools.partial(self._connect_sock,
+                                       exceptions, addrinfo, laddr_infos)
+                     for addrinfo in infos),
+                    happy_eyeballs_delay, loop=self)
+    
+            if sock is None:
+                exceptions = [exc for sub in exceptions for exc in sub]
+                try:
+                    if len(exceptions) == 1:
+                        raise exceptions[0]
+                    else:
+                        # If they all have the same str(), raise one.
+                        model = str(exceptions[0])
+                        if all(str(exc) == model for exc in exceptions):
+                            raise exceptions[0]
+                        # Raise a combined exception so the user can see all
+                        # the various error messages.
+>                       raise OSError('Multiple exceptions: {}'.format(
+                            ', '.join(str(exc) for exc in exceptions)))
+E                           OSError: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+
+/usr/local/lib/python3.11/asyncio/base_events.py:1094: OSError
+________________________ test_file_connector_to_csvdump ________________________
+
+    def test_file_connector_to_csvdump():
+    	async def _run():
+    		with tempfile.TemporaryDirectory() as src, tempfile.TemporaryDirectory() as out:
+    			# create a sample text file
+    			p = Path(src) / "sample.txt"
+    			p.write_text("hello world")
+    			async with AsyncSessionLocal() as session:
+    				profile = await _create_profile(session, src, out)
+    				sync_connector.apply(args=[str(profile.id), str(profile.user_id), str(profile.organization_id)])
+    				files = list(Path(out).glob('*.json'))
+    				assert len(files) >= 1
+>   	asyncio.get_event_loop().run_until_complete(_run())
+
+tests/integration/test_file_connector_csvdump.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+tests/integration/test_file_connector_csvdump.py:40: in _run
+    profile = await _create_profile(session, src, out)
+tests/integration/test_file_connector_csvdump.py:28: in _create_profile
+    await session.commit()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2017: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1302: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1277: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4341: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4476: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4437: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
+    for (
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1753: in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+<string>:2: in connection
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1039: in connection
+    return self._connection_for_bind(bind, execution_options)
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1175: in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+<string>:2: in _connection_for_bind
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3276: in connect
+    return self._connection_cls(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3300: in raw_connection
+    return self.pool.connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1263: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:712: in checkout
+    rec = pool._do_get()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:179: in _do_get
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:177: in _do_get
+    return self._create_connection()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:390: in _create_connection
+    return _ConnectionRecord(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:674: in __init__
+    self.__connect()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:900: in __connect
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/pool/base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/create.py:643: in connect
+    return dialect.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:620: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:937: in connect
+    await_only(creator_fn(*arg, **kw)),
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:131: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/asyncpg/connection.py:2329: in connect
+    return await connect_utils._connect(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:1017: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:991: in _connect
+    conn = await _connect_addr(
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:828: in _connect_addr
+    return await __connect_addr(params, True, *args)
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:873: in __connect_addr
+    tr, pr = await connector
+/usr/local/lib/python3.11/site-packages/asyncpg/connect_utils.py:744: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+protocol_factory = <function _create_ssl_connection.<locals>.<lambda> at 0x7f1a16a034c0>
+host = 'localhost', port = 5432
+
+    async def create_connection(
+            self, protocol_factory, host=None, port=None,
+            *, ssl=None, family=0,
+            proto=0, flags=0, sock=None,
+            local_addr=None, server_hostname=None,
+            ssl_handshake_timeout=None,
+            ssl_shutdown_timeout=None,
+            happy_eyeballs_delay=None, interleave=None):
+        """Connect to a TCP server.
+    
+        Create a streaming transport connection to a given internet host and
+        port: socket family AF_INET or socket.AF_INET6 depending on host (or
+        family if specified), socket type SOCK_STREAM. protocol_factory must be
+        a callable returning a protocol instance.
+    
+        This method is a coroutine which will try to establish the connection
+        in the background.  When successful, the coroutine returns a
+        (transport, protocol) pair.
+        """
+        if server_hostname is not None and not ssl:
+            raise ValueError('server_hostname is only meaningful with ssl')
+    
+        if server_hostname is None and ssl:
+            # Use host as default for server_hostname.  It is an error
+            # if host is empty or not set, e.g. when an
+            # already-connected socket was passed or when only a port
+            # is given.  To avoid this error, you can pass
+            # server_hostname='' -- this will bypass the hostname
+            # check.  (This also means that if host is a numeric
+            # IP/IPv6 address, we will attempt to verify that exact
+            # address; this will probably fail, but it is possible to
+            # create a certificate for a specific IP address, so we
+            # don't judge it here.)
+            if not host:
+                raise ValueError('You must set server_hostname '
+                                 'when using ssl without a host')
+            server_hostname = host
+    
+        if ssl_handshake_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_handshake_timeout is only meaningful with ssl')
+    
+        if ssl_shutdown_timeout is not None and not ssl:
+            raise ValueError(
+                'ssl_shutdown_timeout is only meaningful with ssl')
+    
+        if sock is not None:
+            _check_ssl_socket(sock)
+    
+        if happy_eyeballs_delay is not None and interleave is None:
+            # If using happy eyeballs, default to interleave addresses by family
+            interleave = 1
+    
+        if host is not None or port is not None:
+            if sock is not None:
+                raise ValueError(
+                    'host/port and sock can not be specified at the same time')
+    
+            infos = await self._ensure_resolved(
+                (host, port), family=family,
+                type=socket.SOCK_STREAM, proto=proto, flags=flags, loop=self)
+            if not infos:
+                raise OSError('getaddrinfo() returned empty list')
+    
+            if local_addr is not None:
+                laddr_infos = await self._ensure_resolved(
+                    local_addr, family=family,
+                    type=socket.SOCK_STREAM, proto=proto,
+                    flags=flags, loop=self)
+                if not laddr_infos:
+                    raise OSError('getaddrinfo() returned empty list')
+            else:
+                laddr_infos = None
+    
+            if interleave:
+                infos = _interleave_addrinfos(infos, interleave)
+    
+            exceptions = []
+            if happy_eyeballs_delay is None:
+                # not using happy eyeballs
+                for addrinfo in infos:
+                    try:
+                        sock = await self._connect_sock(
+                            exceptions, addrinfo, laddr_infos)
+                        break
+                    except OSError:
+                        continue
+            else:  # using happy eyeballs
+                sock, _, _ = await staggered.staggered_race(
+                    (functools.partial(self._connect_sock,
+                                       exceptions, addrinfo, laddr_infos)
+                     for addrinfo in infos),
+                    happy_eyeballs_delay, loop=self)
+    
+            if sock is None:
+                exceptions = [exc for sub in exceptions for exc in sub]
+                try:
+                    if len(exceptions) == 1:
+                        raise exceptions[0]
+                    else:
+                        # If they all have the same str(), raise one.
+                        model = str(exceptions[0])
+                        if all(str(exc) == model for exc in exceptions):
+                            raise exceptions[0]
+                        # Raise a combined exception so the user can see all
+                        # the various error messages.
+>                       raise OSError('Multiple exceptions: {}'.format(
+                            ', '.join(str(exc) for exc in exceptions)))
+E                           OSError: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+
+/usr/local/lib/python3.11/asyncio/base_events.py:1094: OSError
+______________________________ test_profile_crud _______________________________
+
+client = (<starlette.testclient.TestClient object at 0x7f1a14bf2450>, <tests.test_profiles._FakeSession object at 0x7f1a14bf2d10>)
+
+    def test_profile_crud(client):
+        c, db = client
+        org_id = uuid.uuid4()
+        user_id = uuid.uuid4()
+    
+        # create
+        resp = c.post("/profiles/", json=_sample_payload(org_id, user_id), headers={"X-Org-ID": str(org_id)})
+        assert resp.status_code == 201
+        prof_id = resp.json()["id"]
+    
+        # list
+        resp = c.get("/profiles/", headers={"X-Org-ID": str(org_id)})
+        assert resp.status_code == 200 and len(resp.json()) == 1
+    
+        # get
+        resp = c.get(f"/profiles/{prof_id}", headers={"X-Org-ID": str(org_id)})
+        assert resp.status_code == 200 and resp.json()["id"] == prof_id
+    
+        # patch (interval + pause)
+        resp = c.patch(f"/profiles/{prof_id}", json={"interval_minutes": 30, "status": "paused"}, headers={"X-Org-ID": str(org_id)})
+>       assert resp.status_code == 200 and resp.json()["interval_minutes"] == 30 and resp.json()["status"] == "paused"
+E       AssertionError: assert (200 == 200 and 30 == 30 and 'active' == 'paused'
+E        +  where 200 = <Response [200 OK]>.status_code
+E         
+E         - paused
+E         + active)
+
+tests/test_profiles.py:98: AssertionError
+----------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 1110, in emit
+    msg = self.format(record)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 953, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/GenericIntegrationServer/backend/logging.py", line 21, in format
+    return json.dumps(payload)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type URL is not JSON serializable
+Call stack:
+  File "/usr/local/bin/pytest", line 7, in <module>
+    sys.exit(console_main())
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 197, in console_main
+    code = main()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 174, in main
+    ret: Union[ExitCode, int] = config.hook.pytest_cmdline_main(
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 332, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 285, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 339, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 364, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 115, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 134, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 239, in call_and_report
+    call = CallInfo.from_call(
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 340, in from_call
+    result: Optional[TResult] = func()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 240, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 172, in pytest_runtest_call
+    item.runtest()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 1772, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "/workspaces/GenericIntegrationServer/tests/test_profiles.py", line 84, in test_profile_crud
+    resp = c.post("/profiles/", json=_sample_payload(org_id, user_id), headers={"X-Org-ID": str(org_id)})
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 608, in post
+    return super().post(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1145, in post
+    return self.request(
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 491, in request
+    return super().request(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 827, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1026, in _send_single_request
+    logger.info(
+Message: 'HTTP Request: %s %s "%s %d %s"'
+Arguments: ('POST', URL('http://testserver/profiles/'), 'HTTP/1.1', 201, 'Created')
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 1110, in emit
+    msg = self.format(record)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 953, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/GenericIntegrationServer/backend/logging.py", line 21, in format
+    return json.dumps(payload)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type URL is not JSON serializable
+Call stack:
+  File "/usr/local/bin/pytest", line 7, in <module>
+    sys.exit(console_main())
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 197, in console_main
+    code = main()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 174, in main
+    ret: Union[ExitCode, int] = config.hook.pytest_cmdline_main(
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 332, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 285, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 339, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 364, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 115, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 134, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 239, in call_and_report
+    call = CallInfo.from_call(
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 340, in from_call
+    result: Optional[TResult] = func()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 240, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 172, in pytest_runtest_call
+    item.runtest()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 1772, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "/workspaces/GenericIntegrationServer/tests/test_profiles.py", line 89, in test_profile_crud
+    resp = c.get("/profiles/", headers={"X-Org-ID": str(org_id)})
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 523, in get
+    return super().get(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1054, in get
+    return self.request(
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 491, in request
+    return super().request(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 827, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1026, in _send_single_request
+    logger.info(
+Message: 'HTTP Request: %s %s "%s %d %s"'
+Arguments: ('GET', URL('http://testserver/profiles/'), 'HTTP/1.1', 200, 'OK')
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 1110, in emit
+    msg = self.format(record)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 953, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/GenericIntegrationServer/backend/logging.py", line 21, in format
+    return json.dumps(payload)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type URL is not JSON serializable
+Call stack:
+  File "/usr/local/bin/pytest", line 7, in <module>
+    sys.exit(console_main())
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 197, in console_main
+    code = main()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 174, in main
+    ret: Union[ExitCode, int] = config.hook.pytest_cmdline_main(
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 332, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 285, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 339, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 364, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 115, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 134, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 239, in call_and_report
+    call = CallInfo.from_call(
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 340, in from_call
+    result: Optional[TResult] = func()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 240, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 172, in pytest_runtest_call
+    item.runtest()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 1772, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "/workspaces/GenericIntegrationServer/tests/test_profiles.py", line 93, in test_profile_crud
+    resp = c.get(f"/profiles/{prof_id}", headers={"X-Org-ID": str(org_id)})
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 523, in get
+    return super().get(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1054, in get
+    return self.request(
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 491, in request
+    return super().request(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 827, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1026, in _send_single_request
+    logger.info(
+Message: 'HTTP Request: %s %s "%s %d %s"'
+Arguments: ('GET', URL('http://testserver/profiles/f30f71fe-701c-48ef-9c8e-13e1104bf2a8'), 'HTTP/1.1', 200, 'OK')
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 1110, in emit
+    msg = self.format(record)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 953, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/GenericIntegrationServer/backend/logging.py", line 21, in format
+    return json.dumps(payload)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type URL is not JSON serializable
+Call stack:
+  File "/usr/local/bin/pytest", line 7, in <module>
+    sys.exit(console_main())
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 197, in console_main
+    code = main()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 174, in main
+    ret: Union[ExitCode, int] = config.hook.pytest_cmdline_main(
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 332, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 285, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 339, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 364, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 115, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 134, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 239, in call_and_report
+    call = CallInfo.from_call(
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 340, in from_call
+    result: Optional[TResult] = func()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 240, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 172, in pytest_runtest_call
+    item.runtest()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 1772, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "/workspaces/GenericIntegrationServer/tests/test_profiles.py", line 97, in test_profile_crud
+    resp = c.patch(f"/profiles/{prof_id}", json={"interval_minutes": 30, "status": "paused"}, headers={"X-Org-ID": str(org_id)})
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 678, in patch
+    return super().patch(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1219, in patch
+    return self.request(
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 491, in request
+    return super().request(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 827, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1026, in _send_single_request
+    logger.info(
+Message: 'HTTP Request: %s %s "%s %d %s"'
+Arguments: ('PATCH', URL('http://testserver/profiles/f30f71fe-701c-48ef-9c8e-13e1104bf2a8'), 'HTTP/1.1', 200, 'OK')
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1026 HTTP Request: POST http://testserver/profiles/ "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1026 HTTP Request: GET http://testserver/profiles/ "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1026 HTTP Request: GET http://testserver/profiles/f30f71fe-701c-48ef-9c8e-13e1104bf2a8 "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1026 HTTP Request: PATCH http://testserver/profiles/f30f71fe-701c-48ef-9c8e-13e1104bf2a8 "HTTP/1.1 200 OK"
+____________________ test_run_now_and_list_runs_route_smoke ____________________
+
+client = (<starlette.testclient.TestClient object at 0x7f1a154f57d0>, <tests.test_profiles._FakeSession object at 0x7f1a154f5ad0>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1a154f6410>
+
+    def test_run_now_and_list_runs_route_smoke(client, monkeypatch):
+        c, db = client
+        org_id = uuid.uuid4(); user_id = uuid.uuid4()
+        # create
+        resp = c.post("/profiles/", json=_sample_payload(org_id, user_id), headers={"X-Org-ID": str(org_id)})
+        assert resp.status_code == 201
+        prof_id = resp.json()["id"]
+    
+        # monkeypatch task.delay to avoid importing celery during unit tests
+        class _DummyTask:
+            def __init__(self):
+                self.id = "task-1"
+        def _fake_delay(a, b, c):
+            return _DummyTask()
+        from backend.orchestrator import tasks as _tasks_mod
+        monkeypatch.setattr(_tasks_mod.sync_connector, "delay", _fake_delay)
+    
+        # run-now
+        resp = c.post(f"/profiles/{prof_id}/run", headers={"X-Org-ID": str(org_id)})
+        assert resp.status_code == 202 and resp.json()["task_id"] == "task-1"
+    
+        # list runs (empty with fake db session)
+>       resp = c.get(f"/profiles/{prof_id}/runs", headers={"X-Org-ID": str(org_id)})
+
+tests/test_profiles.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/starlette/testclient.py:523: in get
+    return super().get(
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:1054: in get
+    return self.request(
+/usr/local/lib/python3.11/site-packages/starlette/testclient.py:491: in request
+    return super().request(
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:827: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+/usr/local/lib/python3.11/site-packages/httpx/_client.py:1015: in _send_single_request
+    response = transport.handle_request(request)
+/usr/local/lib/python3.11/site-packages/starlette/testclient.py:372: in handle_request
+    raise exc
+/usr/local/lib/python3.11/site-packages/starlette/testclient.py:369: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.11/site-packages/anyio/from_thread.py:291: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+/usr/local/lib/python3.11/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+/usr/local/lib/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.11/site-packages/anyio/from_thread.py:222: in _call_func
+    retval = await retval_or_awaitable
+/usr/local/lib/python3.11/site-packages/fastapi/applications.py:1054: in __call__
+    await super().__call__(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/applications.py:123: in __call__
+    await self.middleware_stack(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+/usr/local/lib/python3.11/site-packages/prometheus_fastapi_instrumentator/middleware.py:169: in __call__
+    raise exc
+/usr/local/lib/python3.11/site-packages/prometheus_fastapi_instrumentator/middleware.py:167: in __call__
+    await self.app(scope, receive, send_wrapper)
+/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py:83: in __call__
+    await self.app(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py:62: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py:64: in wrapped_app
+    raise exc
+/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    await app(scope, receive, sender)
+/usr/local/lib/python3.11/site-packages/starlette/routing.py:758: in __call__
+    await self.middleware_stack(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/routing.py:778: in app
+    await route.handle(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/routing.py:299: in handle
+    await self.app(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/routing.py:79: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py:64: in wrapped_app
+    raise exc
+/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    await app(scope, receive, sender)
+/usr/local/lib/python3.11/site-packages/starlette/routing.py:74: in app
+    response = await func(request)
+/usr/local/lib/python3.11/site-packages/fastapi/routing.py:296: in app
+    content = await serialize_response(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def serialize_response(
+        *,
+        field: Optional[ModelField] = None,
+        response_content: Any,
+        include: Optional[IncEx] = None,
+        exclude: Optional[IncEx] = None,
+        by_alias: bool = True,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        is_coroutine: bool = True,
+    ) -> Any:
+        if field:
+            errors = []
+            if not hasattr(field, "serialize"):
+                # pydantic v1
+                response_content = _prepare_response_content(
+                    response_content,
+                    exclude_unset=exclude_unset,
+                    exclude_defaults=exclude_defaults,
+                    exclude_none=exclude_none,
+                )
+            if is_coroutine:
+                value, errors_ = field.validate(response_content, {}, loc=("response",))
+            else:
+                value, errors_ = await run_in_threadpool(
+                    field.validate, response_content, {}, loc=("response",)
+                )
+            if isinstance(errors_, list):
+                errors.extend(errors_)
+            elif errors_:
+                errors.append(errors_)
+            if errors:
+>               raise ResponseValidationError(
+                    errors=_normalize_errors(errors), body=response_content
+                )
+E               fastapi.exceptions.ResponseValidationError: 1 validation errors:
+E                 {'type': 'missing', 'loc': ('response', 0, 'profile_id'), 'msg': 'Field required', 'input': <backend.db.models.ConnectorProfile object at 0x7f1a15f04290>, 'url': 'https://errors.pydantic.dev/2.6/v/missing'}
+
+/usr/local/lib/python3.11/site-packages/fastapi/routing.py:155: ResponseValidationError
+----------------------------- Captured stderr call -----------------------------
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 1110, in emit
+    msg = self.format(record)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 953, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/GenericIntegrationServer/backend/logging.py", line 21, in format
+    return json.dumps(payload)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type URL is not JSON serializable
+Call stack:
+  File "/usr/local/bin/pytest", line 7, in <module>
+    sys.exit(console_main())
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 197, in console_main
+    code = main()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 174, in main
+    ret: Union[ExitCode, int] = config.hook.pytest_cmdline_main(
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 332, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 285, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 339, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 364, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 115, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 134, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 239, in call_and_report
+    call = CallInfo.from_call(
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 340, in from_call
+    result: Optional[TResult] = func()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 240, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 172, in pytest_runtest_call
+    item.runtest()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 1772, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "/workspaces/GenericIntegrationServer/tests/test_profiles.py", line 104, in test_run_now_and_list_runs_route_smoke
+    resp = c.post("/profiles/", json=_sample_payload(org_id, user_id), headers={"X-Org-ID": str(org_id)})
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 608, in post
+    return super().post(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1145, in post
+    return self.request(
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 491, in request
+    return super().request(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 827, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1026, in _send_single_request
+    logger.info(
+Message: 'HTTP Request: %s %s "%s %d %s"'
+Arguments: ('POST', URL('http://testserver/profiles/'), 'HTTP/1.1', 201, 'Created')
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 1110, in emit
+    msg = self.format(record)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/logging/__init__.py", line 953, in format
+    return fmt.format(record)
+           ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/GenericIntegrationServer/backend/logging.py", line 21, in format
+    return json.dumps(payload)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type URL is not JSON serializable
+Call stack:
+  File "/usr/local/bin/pytest", line 7, in <module>
+    sys.exit(console_main())
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 197, in console_main
+    code = main()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/config/__init__.py", line 174, in main
+    ret: Union[ExitCode, int] = config.hook.pytest_cmdline_main(
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 332, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 285, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 339, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/main.py", line 364, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 115, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 134, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 239, in call_and_report
+    call = CallInfo.from_call(
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 340, in from_call
+    result: Optional[TResult] = func()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 240, in <lambda>
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/runner.py", line 172, in pytest_runtest_call
+    item.runtest()
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 1772, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "/usr/local/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "/usr/local/lib/python3.11/site-packages/_pytest/python.py", line 195, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "/workspaces/GenericIntegrationServer/tests/test_profiles.py", line 118, in test_run_now_and_list_runs_route_smoke
+    resp = c.post(f"/profiles/{prof_id}/run", headers={"X-Org-ID": str(org_id)})
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 608, in post
+    return super().post(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1145, in post
+    return self.request(
+  File "/usr/local/lib/python3.11/site-packages/starlette/testclient.py", line 491, in request
+    return super().request(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 827, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1026, in _send_single_request
+    logger.info(
+Message: 'HTTP Request: %s %s "%s %d %s"'
+Arguments: ('POST', URL('http://testserver/profiles/48d7e486-e785-4238-b0b4-b5b1dfb44c6d/run'), 'HTTP/1.1', 202, 'Accepted')
+------------------------------ Captured log call -------------------------------
+INFO     httpx:_client.py:1026 HTTP Request: POST http://testserver/profiles/ "HTTP/1.1 201 Created"
+INFO     httpx:_client.py:1026 HTTP Request: POST http://testserver/profiles/48d7e486-e785-4238-b0b4-b5b1dfb44c6d/run "HTTP/1.1 202 Accepted"
+=============================== warnings summary ===============================
+../../usr/local/lib/python3.11/site-packages/pydantic/_internal/_config.py:272
+../../usr/local/lib/python3.11/site-packages/pydantic/_internal/_config.py:272
+../../usr/local/lib/python3.11/site-packages/pydantic/_internal/_config.py:272
+  /usr/local/lib/python3.11/site-packages/pydantic/_internal/_config.py:272: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.6/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+../../usr/local/lib/python3.11/site-packages/httpx/_client.py:680
+tests/test_health.py::test_health
+tests/test_profiles.py::test_profile_crud
+tests/test_profiles.py::test_run_now_and_list_runs_route_smoke
+  /usr/local/lib/python3.11/site-packages/httpx/_client.py:680: DeprecationWarning: The 'app' shortcut is now deprecated. Use the explicit style 'transport=WSGITransport(app=...)' instead.
+    warnings.warn(message, DeprecationWarning)
+
+tests/test_profiles.py::test_profile_crud
+  /usr/local/lib/python3.11/site-packages/pydantic/main.py:1024: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.6/migration/
+    warnings.warn('The `dict` method is deprecated; use `model_dump` instead.', category=PydanticDeprecatedSince20)
+
+tests/test_security_enhanced.py::TestAuditLogging::test_log_credential_created
+tests/test_security_enhanced.py::TestAuditLogging::test_log_credential_accessed
+tests/test_security_enhanced.py::TestAuditLogging::test_log_credential_test_failure
+tests/test_security_enhanced.py::TestAuditLogging::test_audit_logging_resilience
+  /workspaces/GenericIntegrationServer/backend/security/audit.py:60: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    try:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform linux, python 3.11.13-final-0 ----------
+Name                                                     Stmts   Miss  Cover
+----------------------------------------------------------------------------
+backend/__init__.py                                          0      0   100%
+backend/auth/__init__.py                                     0      0   100%
+backend/auth/crypto.py                                       5      0   100%
+backend/auth/db_provider.py                                132     70    47%
+backend/auth/factory.py                                     11      4    64%
+backend/auth/interfaces.py                                   9      0   100%
+backend/auth/keycloak_provider.py                            9      3    67%
+backend/auth/schemas.py                                     16      0   100%
+backend/connectors/credentials_provider.py                 174    116    33%
+backend/db/__init__.py                                       0      0   100%
+backend/db/base.py                                           6      0   100%
+backend/db/models.py                                        98      0   100%
+backend/db/rls.py                                            6      0   100%
+backend/db/session.py                                       21      4    81%
+backend/deps.py                                             10      0   100%
+backend/destinations/__init__.py                            20      4    80%
+backend/destinations/base.py                                25      3    88%
+backend/destinations/cleverbrag.py                          61     19    69%
+backend/destinations/csvdump.py                             32      2    94%
+backend/destinations/onyx.py                                28      0   100%
+backend/legacy_context.py                                    9      3    67%
+backend/logging.py                                          22      1    95%
+backend/main.py                                             31      0   100%
+backend/orchestrator/__init__.py                             9      0   100%
+backend/orchestrator/scheduler.py                           38      8    79%
+backend/orchestrator/task_utils.py                          46     11    76%
+backend/orchestrator/tasks.py                              111     58    48%
+backend/routes/__init__.py                                   0      0   100%
+backend/routes/auth.py                                      61     24    61%
+backend/routes/connectors.py                                20     12    40%
+backend/routes/credentials.py                              185    120    35%
+backend/routes/destinations.py                              12      6    50%
+backend/routes/oauth.py                                    129     98    24%
+backend/routes/orchestrator.py                               7      2    71%
+backend/routes/profiles.py                                  59      6    90%
+backend/routes/security.py                                 134     83    38%
+backend/routes/sync_runs.py                                 11      3    73%
+backend/routes/targets.py                                   20      7    65%
+backend/schemas/profiles.py                                 35      0   100%
+backend/schemas/targets.py                                  15      0   100%
+backend/security/audit.py                                   56     11    80%
+backend/security/crypto.py                                 103     13    87%
+backend/security/redact.py                                  12      0   100%
+backend/settings.py                                         20      0   100%
+connectors/__init__.py                                       0      0   100%
+connectors/onyx/__init__.py                                  0      0   100%
+connectors/onyx/configs/constants.py                       319      4    99%
+connectors/onyx/connectors/__init__.py                       0      0   100%
+connectors/onyx/connectors/interfaces.py                   119     34    71%
+connectors/onyx/connectors/mock_connector/connector.py      66      7    89%
+connectors/onyx/connectors/models.py                       216     92    57%
+onyx/__init__.py                                            75      9    88%
+shared_configs/__init__.py                                  12      1    92%
+tests/conftest.py                                            5      0   100%
+tests/connector_runtime/test_mock_connector.py              29      1    97%
+tests/integration/__init__.py                                0      0   100%
+tests/integration/test_checkpoint_persistence.py            23      5    78%
+tests/integration/test_checkpoint_stub.py                   65     17    74%
+tests/integration/test_csvdump_destination.py               27      5    81%
+tests/integration/test_destination_end_to_end.py           114    103    10%
+tests/integration/test_file_connector_csvdump.py            27      5    81%
+tests/integration/test_rls.py                               64     53    17%
+tests/integration/test_sync_scheduler.py                   134    124     7%
+tests/orchestrator/test_retry_policy.py                      5      0   100%
+tests/orchestrator/test_sync_connector.py                   60      2    97%
+tests/test_auth.py                                          24      0   100%
+tests/test_cleverbrag_destination.py                        19      0   100%
+tests/test_connector_import.py                              13      3    77%
+tests/test_deps.py                                          14      0   100%
+tests/test_destinations_csvdump.py                          15      0   100%
+tests/test_destinations_onyx.py                             21      0   100%
+tests/test_health.py                                         8      0   100%
+tests/test_oauth_utils.py                                   22     11    50%
+tests/test_profiles.py                                      74      2    97%
+tests/test_scheduler.py                                     77      0   100%
+tests/test_security_crypto.py                               18      0   100%
+tests/test_security_enhanced.py                            172      0   100%
+tests/test_task_utils.py                                    43      1    98%
+tests/test_tasks.py                                         29      2    93%
+----------------------------------------------------------------------------
+TOTAL                                                     3717   1172    68%
+
+=========================== short test summary info ============================
+FAILED tests/integration/test_checkpoint_persistence.py::test_checkpoint_persisted
+FAILED tests/integration/test_checkpoint_stub.py::test_stub_checkpoint_persistence
+FAILED tests/integration/test_csvdump_destination.py::test_csvdump_writes_file
+FAILED tests/integration/test_file_connector_csvdump.py::test_file_connector_to_csvdump
+FAILED tests/test_profiles.py::test_profile_crud - AssertionError: assert (20...
+FAILED tests/test_profiles.py::test_run_now_and_list_runs_route_smoke - fasta...
+============ 6 failed, 39 passed, 3 skipped, 12 warnings in 27.58s =============

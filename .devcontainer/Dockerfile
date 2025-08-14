@@ -35,6 +35,11 @@ RUN apt-get update \
 COPY requirements ./requirements
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements/default.txt -r requirements/dev.txt
 
+# Install Poetry (global) for developer workflows
+RUN pip install --no-cache-dir poetry && poetry --version
+ENV POETRY_VIRTUALENVS_CREATE=false
+ENV POETRY_NO_INTERACTION=1
+
 # Create a vscode user with sudo privileges
 ARG USERNAME=vscode
 ARG USER_UID=1000

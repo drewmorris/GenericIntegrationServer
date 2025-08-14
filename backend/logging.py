@@ -15,7 +15,18 @@ class JsonFormatter(logging.Formatter):
 			"message": record.getMessage(),
 		}
 		if record.args:
-			payload["args"] = mask_secrets(record.args)
+			try:
+				# Convert non-serializable args to strings for JSON safety
+				serializable = []
+				for a in record.args if isinstance(record.args, (list, tuple)) else [record.args]:
+					try:
+						json.dumps(a)
+						serializable.append(a)
+					except Exception:
+						serializable.append(str(a))
+				payload["args"] = mask_secrets(tuple(serializable))
+			except Exception:
+				payload["args"] = "<unserializable>"
 		if record.exc_info:
 			payload["exc_info"] = self.formatException(record.exc_info)
 		return json.dumps(payload)

@@ -1,0 +1,71 @@
+### Full Parity Checklist: Connectors & Profiles vs LegacyCode
+
+- Connector coverage: parity
+  - Current and legacy both include the same set of concrete connectors (Airtable, Asana, Axero, Blob, Bookstack, ClickUp, Confluence, Discord, Discourse, Document360, Dropbox, Egnyte, Fireflies, Freshdesk, GitBook, GitHub, GitLab, Gmail, Gong, Google Drive, Google Sites, Guru, Highspot, HubSpot, IMAP, Jira, Linear, Loopio, MediaWiki, Notion, Productboard, RequestTracker, Salesforce, SharePoint, Slab, Slack, Teams, Web, Wikipedia, Xenforo, Zendesk, Zulip, Local File). No missing connector classes found.
+  - Base interfaces (`BaseConnector`, `LoadConnector`, `PollConnector`, `SlimConnector`, `OAuthConnector`, `CredentialsConnector`, `EventConnector`, `CheckpointedConnector`, `CheckpointedConnectorWithPermSync`) are functionally identical.
+
+- Connector runtime/integration
+  - Present:
+    - Connector identification and execution via Onyx `ConnectorRunner` with time range and optional checkpoint resume.
+    - JSON schemas for popular connectors exposed via `GET /connectors/definitions` to drive Material UI forms.
+    - Credentials loading path for runs using our DB-backed provider when `credential_id` is set.
+  - Missing vs legacy:
+    - No first-class endpoints/flows for OAuth authorize/callback/token exchange per connector; legacy supports OAuth in many connectors via their server flow.
+    - No permission-sync/external-group sync handling for connectors that support it.
+    - No job-level pruning/KG processing triggers; legacy has pruning/KG utilities per connector.
+
+- Credentials
+  - Present:
+    - Full CRUD routes with encryption-at-rest, rotation, reveal (admin-gated), and a basic “test credential” endpoint.
+    - Runtime `DBCredentialsProvider` with Redis locking, audit logging, key rotation checks.
+  - Partial/missing:
+    - OAuth token refresh is stubbed; provider increments refresh attempts but does not perform provider-specific refresh.
+    - Multi-credential association and access control groups are not modeled; legacy uses `ConnectorCredentialPair` with status, access type, groups, repeated error state, etc.
+
+- Profiles (new concept here; no direct legacy equivalent)
+  - Present:
+    - `ConnectorProfile` model with `name`, `source`, `connector_config`, `interval_minutes`, `next_run_at`, optional `checkpoint_json`, and `SyncRun` tracking.
+    - CRUD routes for profiles, async scheduler scanning due profiles, Celery task that runs connector and writes to a destination.
+    - Checkpoint persistence on successful runs for compatible connectors.
+  - Gaps and issues:
+    - The create endpoint ignores the `credential_id` passed in the payload; this breaks credential-backed runs that the task expects to use.
+      - In `backend/routes/profiles.py`, `credential_id` is not set on create.
+      - In `backend/orchestrator/tasks.py`, the task expects `profile.credential_id` to load credentials.
+    - No endpoints to trigger a run, pause/resume a profile, or list `SyncRun` history; legacy exposes rich admin ops via DB APIs.
+    - No per-profile status field; only `SyncRun` has status. Legacy surfaces connector/pair status and repeated error signals.
+    - No org/user-group based access for “profiles”; legacy controls connector visibility/editability via groups.
+    - No per-profile advanced scheduling (cron/rate limits/windowing). We only support fixed `interval_minutes`.
+
+- Tests
+  - Present: basic CRUD test for profiles and several connector import/runtime tests.
+  - Missing:
+    - Tests for scheduler due-scan behavior and `SyncRun` lifecycle.
+    - Tests for full connector run through task with credential loading and checkpoint persistence.
+    - Tests for credentials token refresh pathways.
+
+---
+
+Recommended actions (prioritized)
+
+1) Fix credential association in profile create/update
+- Add `credential_id` persistence in `POST /profiles/` and support patching it.
+
+2) Minimal run-control APIs
+- Add endpoints: trigger run now, list runs for a profile, cancel/pause/resume.
+
+3) OAuth support MVP
+- Add generic endpoints to initiate OAuth and receive callback, delegating to connector `OAuthConnector` methods; persist tokens to `Credential`.
+
+4) Token refresh hooks
+- Implement provider-specific refresh in `DBCredentialsProvider._attempt_token_refresh` for top connectors (Google, Slack, GitHub, etc.).
+
+5) Enhance scheduling/status
+- Add profile `status` (active/paused/failed) and respect it in scheduler.
+- Optional: cron expression support alongside `interval_minutes`.
+
+6) Access control
+- Introduce simple group/team ownership or keep it per-org-per-user initially; document multi-tenant constraints.
+
+7) Tests
+- Add unit/integration tests for: scheduler scan, task run path using a real connector (mocked I/O), checkpoint round-trip, and credential refresh.
+

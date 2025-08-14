@@ -3,15 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from starlette.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated  # noqa: F401
 import uuid
 import os
 import json
 from urllib.parse import urlparse
 import logging
 
-from connectors.onyx.configs.constants import DocumentSource  # type: ignore
-from connectors.onyx.connectors.interfaces import OAuthConnector  # type: ignore
-from connectors.onyx.connectors.factory import identify_connector_class  # type: ignore
+# Defer heavy Onyx imports to runtime inside endpoints to avoid import-time side effects in tests
 
 from backend.db.session import get_db
 from backend.db import models as m
@@ -75,14 +74,17 @@ async def oauth_start(
     if redirect_uri and not _is_allowed(redirect_uri):
         raise HTTPException(status_code=400, detail="Disallowed redirect_uri host")
 
+    # Lazy import Onyx connector runtime
     try:
+        from connectors.onyx.configs.constants import DocumentSource  # type: ignore
+        from connectors.onyx.connectors.interfaces import OAuthConnector  # type: ignore
+        from connectors.onyx.connectors.factory import identify_connector_class  # type: ignore
         src = getattr(DocumentSource, connector.upper())
-    except AttributeError as exc:  # noqa: BLE001
-        raise HTTPException(status_code=404, detail="Connector not found") from exc
-
-    conn_cls = identify_connector_class(src)
-    if not issubclass(conn_cls, OAuthConnector):
-        raise HTTPException(status_code=400, detail="Connector does not support OAuth")
+        conn_cls = identify_connector_class(src)
+        if not issubclass(conn_cls, OAuthConnector):
+            raise HTTPException(status_code=400, detail="Connector does not support OAuth")
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=404, detail="Connector not found or OAuth not supported") from exc
 
     base_domain = _get_base_domain(request)
     additional_kwargs: dict[str, str] = {}
@@ -122,13 +124,15 @@ async def oauth_callback(
     db: AsyncSession = Depends(get_db),
 ):
     try:
+        from connectors.onyx.configs.constants import DocumentSource  # type: ignore
+        from connectors.onyx.connectors.interfaces import OAuthConnector  # type: ignore
+        from connectors.onyx.connectors.factory import identify_connector_class  # type: ignore
         src = getattr(DocumentSource, connector.upper())
-    except AttributeError as exc:  # noqa: BLE001
-        raise HTTPException(status_code=404, detail="Connector not found") from exc
-
-    conn_cls = identify_connector_class(src)
-    if not issubclass(conn_cls, OAuthConnector):
-        raise HTTPException(status_code=400, detail="Connector does not support OAuth")
+        conn_cls = identify_connector_class(src)
+        if not issubclass(conn_cls, OAuthConnector):
+            raise HTTPException(status_code=400, detail="Connector does not support OAuth")
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=404, detail="Connector not found or OAuth not supported") from exc
 
     # resolve state
     resolved_org = organization_id

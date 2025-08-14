@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status, Query, HTTPException, Header, Request
+from typing import Annotated  # noqa: F401  (kept for type hints in other modules)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -46,11 +47,11 @@ class CredentialOut(BaseModel):
 
 @router.get("/", response_model=List[CredentialOut])
 async def list_credentials(
-	db: AsyncSession = Depends(get_db),
-	organization_id: Optional[uuid.UUID] = Query(default=None),
-	user_id: Optional[uuid.UUID] = Query(default=None),
-	connector_name: Optional[str] = Query(default=None),
-	status: Optional[str] = Query(default=None),
+    organization_id: Optional[uuid.UUID] = Query(default=None),
+    user_id: Optional[uuid.UUID] = Query(default=None),
+    connector_name: Optional[str] = Query(default=None),
+    status: Optional[str] = Query(default=None),
+    db: AsyncSession = Depends(get_db),
 ) -> list[m.Credential]:
 	stmt = select(m.Credential)
 	if organization_id is not None:
@@ -74,10 +75,10 @@ async def list_credentials(
 
 @router.post("/", response_model=CredentialOut, status_code=status.HTTP_201_CREATED)
 async def create_credential(
-	request: Request,
-	payload: CredentialCreate,
-	db: AsyncSession = Depends(get_db),
-	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+    request: Request,
+    payload: CredentialCreate,
+    db: AsyncSession = Depends(get_db),
+    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> m.Credential:
 	try:
 		# Get client IP for audit logging
@@ -154,11 +155,11 @@ class CredentialUpdate(BaseModel):
 
 @router.patch("/{cred_id}", response_model=CredentialOut)
 async def update_credential(
-	request: Request,
-	cred_id: uuid.UUID, 
-	payload: CredentialUpdate, 
-	db: AsyncSession = Depends(get_db),
-	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+    request: Request,
+    cred_id: uuid.UUID, 
+    payload: CredentialUpdate, 
+    db: AsyncSession = Depends(get_db),
+    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> m.Credential:
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
@@ -204,12 +205,12 @@ async def update_credential(
 	logger.info("credential_update id=%s fields=%s", cred_id, fields_updated)
 	return row
 
-@router.delete("/{cred_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{cred_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_credential(
-	request: Request,
-	cred_id: uuid.UUID, 
-	db: AsyncSession = Depends(get_db),
-	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+    request: Request,
+    cred_id: uuid.UUID, 
+    db: AsyncSession = Depends(get_db),
+    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> None:
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
@@ -234,10 +235,10 @@ class CredentialTestResult(BaseModel):
 
 @router.post("/{cred_id}/test", response_model=CredentialTestResult)
 async def test_credential(
-	request: Request,
-	cred_id: uuid.UUID, 
-	db: AsyncSession = Depends(get_db),
-	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+    request: Request,
+    cred_id: uuid.UUID, 
+    db: AsyncSession = Depends(get_db),
+    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> CredentialTestResult:
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
@@ -307,10 +308,10 @@ async def test_credential(
 
 @router.post("/{cred_id}/rotate", response_model=CredentialOut)
 async def rotate_credential_encryption(
-	request: Request,
-	cred_id: uuid.UUID,
-	db: AsyncSession = Depends(get_db),
-	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+    request: Request,
+    cred_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> m.Credential:
 	"""Manually rotate the encryption of a credential."""
 	row = await db.get(m.Credential, cred_id)
@@ -349,11 +350,11 @@ async def rotate_credential_encryption(
 
 @router.get("/{cred_id}/reveal")
 async def reveal_credential(
-	request: Request,
-	cred_id: uuid.UUID,
-	db: AsyncSession = Depends(get_db),
-	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
-	x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret"),
+    request: Request,
+    cred_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+    x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret"),
 ) -> dict:
 	admin_key = os.getenv("ADMIN_API_KEY")
 	if not admin_key or x_admin_secret != admin_key:

@@ -43,7 +43,7 @@ class Credential(Base):
 
 # New audit log model for credential access
 class CredentialAuditLog(Base):
-    __tablename__ = "credential_audit_log"
+    __tablename__ = "credential_audit_log"  # type: ignore[assignment]
     
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     credential_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("credential.id"), nullable=False)
@@ -115,9 +115,13 @@ class ConnectorProfile(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     source: Mapped[str] = mapped_column(String, nullable=False)
     connector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Optional link to stored credentials used by this profile
+    credential_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     checkpoint_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Profile status: active or paused
+    status: Mapped[str] = mapped_column(String, default="active", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     organization: Mapped["Organization"] = relationship()
