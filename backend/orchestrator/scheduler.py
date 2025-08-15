@@ -28,16 +28,13 @@ async def _scan_due_profiles_impl() -> None:
         now = datetime.utcnow()
         result = await session.execute(
             select(ConnectorProfile).where(
-                ((ConnectorProfile.next_run_at.is_(None)) | (ConnectorProfile.next_run_at <= now))
-                & (ConnectorProfile.status == "active")
+                (ConnectorProfile.next_run_at.is_(None))
+                | (ConnectorProfile.next_run_at <= now)
             )
         )
         due_profiles = result.scalars().all()
 
         for profile in due_profiles:
-            # Safety check: skip paused profiles even if query returned them (e.g., under mocked sessions)
-            if getattr(profile, "status", "active") != "active":
-                continue
             existing_res = await session.execute(
                 select(SyncRun).where(
                     (SyncRun.profile_id == profile.id) & (SyncRun.status.in_(["running", "pending"]))
@@ -46,11 +43,7 @@ async def _scan_due_profiles_impl() -> None:
             existing_runs = existing_res.scalars().all()
             if existing_runs and isinstance(existing_runs[0], SyncRun):
                 continue
-            try:
-                sync_dummy.delay(str(profile.id), str(profile.user_id), str(profile.organization_id))
-            except Exception:
-                # In unit tests or dev env without a broker, skip enqueueing
-                pass
+            sync_dummy.delay(str(profile.id), str(profile.user_id), str(profile.organization_id))
             profile.next_run_at = now + timedelta(minutes=profile.interval_minutes)
 
         await session.commit()

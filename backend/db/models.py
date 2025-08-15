@@ -5,7 +5,7 @@ from datetime import datetime
 
 from sqlalchemy import String, DateTime, ForeignKey, Integer, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import relationship, Mapped, mapped_column, declared_attr
 
 from backend.db.base import Base
 
@@ -43,7 +43,9 @@ class Credential(Base):
 
 # New audit log model for credential access
 class CredentialAuditLog(Base):
-    __tablename__ = "credential_audit_log"  # type: ignore[assignment]
+    @declared_attr.directive
+    def __tablename__(cls) -> str:
+        return "credential_audit_log"
     
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     credential_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("credential.id"), nullable=False)
@@ -115,14 +117,12 @@ class ConnectorProfile(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     source: Mapped[str] = mapped_column(String, nullable=False)
     connector_config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    # Optional link to stored credentials used by this profile
-    credential_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     checkpoint_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # Profile status: active or paused
-    status: Mapped[str] = mapped_column(String, default="active", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    credential_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("credential.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String, default="active", nullable=False)
 
     organization: Mapped["Organization"] = relationship()
     user: Mapped["User"] = relationship()

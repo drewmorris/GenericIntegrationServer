@@ -91,9 +91,9 @@ class TestEnhancedCrypto:
         assert isinstance(status["key_count"], int)
     
     @patch.dict(os.environ, {
-        "CREDENTIALS_SECRET_KEY": "test_key_1",
-        "CREDENTIALS_SECRET_KEY_V2": "test_key_2",
-        "CREDENTIALS_SECRET_KEY_V3": "test_key_3"
+        "CREDENTIALS_SECRET_KEY": "dGVzdF9rZXlfMzJfYnl0ZXNfZGV0ZXJtaW5pc3RpYyE=",
+        "CREDENTIALS_SECRET_KEY_V2": "dGVzdF9rZXlfdjJfMzJfYnl0ZXNfZGV0ZXJtaW5pc3Q=",
+        "CREDENTIALS_SECRET_KEY_V3": "dGVzdF9rZXlfdjNfMzJfYnl0ZXNfZGV0ZXJtaW5pc3Q="
     })
     def test_multi_key_support(self):
         """Test support for multiple encryption keys."""

@@ -5,11 +5,7 @@ from sqlalchemy.orm import Session
 
 from onyx.configs.app_configs import INTEGRATION_TESTS_MODE
 from onyx.configs.constants import DocumentSource
-try:
-    from onyx.configs.llm_configs import get_image_extraction_and_analysis_enabled
-except Exception:  # noqa: BLE001
-    def get_image_extraction_and_analysis_enabled() -> bool:  # type: ignore
-        return False
+from onyx.configs.llm_configs import get_image_extraction_and_analysis_enabled
 from onyx.connectors.airtable.airtable_connector import AirtableConnector
 from onyx.connectors.asana.connector import AsanaConnector
 from onyx.connectors.axero.connector import AxeroConnector

@@ -22,10 +22,12 @@ def _get_encryption_keys() -> list[bytes]:
     # Primary key (current)
     primary_key = os.getenv("CREDENTIALS_SECRET_KEY")
     if not primary_key:
-        # Dev/test fallback – generate a valid Fernet key and persist in env
-        primary_key = Fernet.generate_key().decode("utf-8")
+        # Dev/test fallback – deterministic key for tests, insecure for prod
+        import base64
+        test_key = base64.urlsafe_b64encode(b"test_key_32_bytes_deterministic!").decode("utf-8")
+        primary_key = test_key
         os.environ["CREDENTIALS_SECRET_KEY"] = primary_key
-        logger.warning("Using auto-generated encryption key - not suitable for production")
+        logger.warning("Using deterministic test encryption key - not suitable for production")
     
     keys.append(primary_key.encode("utf-8"))
     
@@ -41,25 +43,10 @@ def _get_encryption_keys() -> list[bytes]:
 
 
 def _get_fernet() -> MultiFernet:
-    """Get MultiFernet instance supporting key rotation.
-
-    Robust to invalid env keys: skips invalid keys and falls back to a generated
-    valid key when none are usable. This ensures tests don't fail when a dummy
-    key is configured.
-    """
+    """Get MultiFernet instance supporting key rotation."""
     keys = _get_encryption_keys()
-    valid: list[Fernet] = []
-    for key in keys:
-        try:
-            valid.append(Fernet(key))
-        except Exception:
-            continue
-    if not valid:
-        # No usable keys; generate one and persist to env so subsequent calls match
-        new_key = Fernet.generate_key()
-        os.environ["CREDENTIALS_SECRET_KEY"] = new_key.decode("utf-8")
-        valid.append(Fernet(new_key))
-    return MultiFernet(valid)
+    fernet_keys = [Fernet(key) for key in keys]
+    return MultiFernet(fernet_keys)
 
 
 def _get_current_key_version() -> int:

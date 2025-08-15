@@ -13,7 +13,6 @@ from backend.schemas.profiles import (
     ConnectorProfileCreate,
     ConnectorProfileOut,
     ConnectorProfileUpdate,
-    SyncRunOut,
 )
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
@@ -46,7 +45,7 @@ async def list_profiles_no_slash(db: AsyncSession = Depends(get_db)) -> list[m.C
     summary="Create connector profile",
     description="Create a new connector profile (source + destination config). The calling user/org IDs must be supplied in the payload for now; in the future they will be inferred from auth context.",
 )
-async def create_profile(payload: ConnectorProfileCreate, db: AsyncSession = Depends(get_db)) -> m.ConnectorProfile:
+async def create_profile(payload: ConnectorProfileCreate, db: AsyncSession = Depends(get_db)) -> ConnectorProfileOut:
     obj = m.ConnectorProfile(
         id=uuid.uuid4(),
         organization_id=payload.organization_id,
@@ -56,45 +55,12 @@ async def create_profile(payload: ConnectorProfileCreate, db: AsyncSession = Dep
         connector_config=payload.connector_config,
         interval_minutes=payload.interval_minutes,
         credential_id=payload.credential_id,
-        status=getattr(payload, "status", "active"),
+        status=payload.status,
     )
     db.add(obj)
     await db.commit()
     await db.refresh(obj)
-    return obj
-
-
-@router.post(
-    "/{profile_id}/run",
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="Run profile now",
-    description="Enqueue an immediate sync for this profile.",
-)
-async def run_profile_now(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
-    obj = await db.get(m.ConnectorProfile, profile_id)
-    if obj is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    # Use stored user/org on the profile
-    from backend.orchestrator.tasks import sync_connector
-    task = sync_connector.delay(str(obj.id), str(obj.user_id), str(obj.organization_id))
-    return {"task_id": task.id}
-
-
-@router.get(
-    "/{profile_id}/runs",
-    response_model=List[SyncRunOut],
-    summary="List sync runs for a profile",
-    description="Return recent SyncRun rows for the given profile.",
-)
-async def list_profile_runs(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> list[m.SyncRun]:
-    obj = await db.get(m.ConnectorProfile, profile_id)
-    if obj is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    res = await db.execute(select(m.SyncRun).where(m.SyncRun.profile_id == profile_id))
-    rows = list(res.scalars().all())
-    # In unit tests with a fake session, this may return ConnectorProfile objects; filter them out
-    runs: list[m.SyncRun] = [r for r in rows if hasattr(r, "status") and hasattr(r, "profile_id")]
-    return runs
+    return ConnectorProfileOut.from_orm(obj)
 
 @router.post(
     "",
@@ -102,7 +68,7 @@ async def list_profile_runs(profile_id: uuid.UUID, db: AsyncSession = Depends(ge
     status_code=status.HTTP_201_CREATED,
     include_in_schema=False,
 )
-async def create_profile_no_slash(payload: ConnectorProfileCreate, db: AsyncSession = Depends(get_db)) -> m.ConnectorProfile:
+async def create_profile_no_slash(payload: ConnectorProfileCreate, db: AsyncSession = Depends(get_db)) -> ConnectorProfileOut:
     return await create_profile(payload, db)
 
 
@@ -112,24 +78,24 @@ async def create_profile_no_slash(payload: ConnectorProfileCreate, db: AsyncSess
     summary="Get connector profile",
     description="Retrieve a single connector profile by ID.",
 )
-async def get_profile(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> m.ConnectorProfile:
+async def get_profile(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ConnectorProfileOut:
     obj = await db.get(m.ConnectorProfile, profile_id)
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    return obj
+    return ConnectorProfileOut.from_orm(obj)
 
 
 @router.patch(
     "/{profile_id}",
     response_model=ConnectorProfileOut,
     summary="Update connector profile",
-    description="Partial update of connector profile settings (name, interval, connector_config, credential_id, status).",
+    description="Partial update of connector profile settings (name, interval, connector_config).",
 )
 async def update_profile(
     profile_id: uuid.UUID,
     payload: ConnectorProfileUpdate,
     db: AsyncSession = Depends(get_db),
-) -> m.ConnectorProfile:
+) -> ConnectorProfileOut:
     obj = await db.get(m.ConnectorProfile, profile_id)
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
@@ -139,4 +105,4 @@ async def update_profile(
         setattr(obj, k, v)
     await db.commit()
     await db.refresh(obj)
-    return obj 
+    return ConnectorProfileOut.from_orm(obj) 

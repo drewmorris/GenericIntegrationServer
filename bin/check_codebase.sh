@@ -3,8 +3,10 @@
 # Usage:
 #   bin/check_codebase.sh                 # interactive menu (default)
 #   bin/check_codebase.sh --ci            # non-interactive, run everything & fail on error
-#   bin/check_codebase.sh --ci-emulate    # emulate CI locally (dockerized PG, alembic smoke, isolated env)
+#   bin/check_codebase.sh --ci-emulate    # emulate CI locally (dockerized PG/Redis, schema reset, isolated env)
 #   bin/check_codebase.sh --gh            # run GitHub workflow locally via `act -j build`
+#   bin/check_codebase.sh --keep-containers  # preserve containers between runs (faster subsequent runs)
+#   bin/check_codebase.sh --no-web-checks    # skip web-related checks (frontend linting, tests, build)
 
 set -euo pipefail
 
@@ -18,6 +20,7 @@ CI_EMULATE=false
 RUN_GH=false
 DOCKER_AVAILABLE=false
 NO_WEB_CHECKS=false
+KEEP_CONTAINERS=false
 PYTEST_CMD="poetry run pytest -q"
 
 # Parse flags
@@ -31,6 +34,9 @@ for arg in "$@"; do
       ;;
     --no-web-checks)
       NO_WEB_CHECKS=true
+      ;;
+    --keep-containers)
+      KEEP_CONTAINERS=true
       ;;
   esac
 done
@@ -83,6 +89,49 @@ print("Alembic upgrade head OK →", "$url")
 PY
 }
 
+# Helper: reset database schema (faster than recreating container)
+reset_database_schema() {
+  local url="$1"
+  log "🔄 Resetting database schema (faster than container recreation)"
+  python - <<PY
+from alembic.config import Config
+from alembic import command
+import sqlalchemy as sa
+from sqlalchemy import text
+
+url = "$url"
+cfg = Config("backend/alembic.ini")
+cfg.set_main_option("sqlalchemy.url", url)
+
+try:
+    # Drop all tables by downgrading to base, then upgrade to head
+    command.downgrade(cfg, "base")
+    command.upgrade(cfg, "head")
+    print("✅ Database schema reset complete")
+except Exception as e:
+    print(f"⚠️  Schema reset failed: {e}")
+    # Fallback: try to drop all tables manually
+    engine = sa.create_engine(url)
+    with engine.connect() as conn:
+        # Get all table names
+        result = conn.execute(text("""
+            SELECT tablename FROM pg_tables 
+            WHERE schemaname = 'public' AND tablename != 'alembic_version'
+        """))
+        tables = [row[0] for row in result]
+        
+        if tables:
+            # Drop all tables
+            conn.execute(text(f"DROP TABLE IF EXISTS {', '.join(tables)} CASCADE"))
+            conn.commit()
+            print(f"🗑️  Dropped {len(tables)} tables manually")
+        
+        # Re-run migrations
+        command.upgrade(cfg, "head")
+        print("✅ Database schema recreated")
+PY
+}
+
 # Optional CI emulation prelude
 if [[ "$CI_EMULATE" == true ]]; then
   log "▶️  CI emulation: verifying Docker"
@@ -92,15 +141,39 @@ if [[ "$CI_EMULATE" == true ]]; then
     docker pull postgres:15-alpine >/dev/null || true
     docker pull redis:7-alpine >/dev/null || true
 
-    # Start throwaway Postgres on host 5432 if not already bound
-    PG_CONT_NAME="gis_ci_pg"
+    # Start persistent Postgres on host 5432 if not already running
+    PG_CONT_NAME="gis_ci_pg_persistent"
+    REDIS_CONT_NAME="gis_ci_redis_persistent"
+    
     if ! docker ps --format '{{.Names}}' | grep -q "^${PG_CONT_NAME}$"; then
-      log "▶️  Starting Postgres container ${PG_CONT_NAME} on 5432"
-      docker run --rm -d --name "$PG_CONT_NAME" \
-        -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
-        -e POSTGRES_DB=integration_server -p 5432:5432 postgres:15-alpine >/dev/null
+      # Check if container exists but is stopped
+      if docker ps -a --format '{{.Names}}' | grep -q "^${PG_CONT_NAME}$"; then
+        log "▶️  Restarting existing Postgres container ${PG_CONT_NAME}"
+        docker start "$PG_CONT_NAME" >/dev/null
+      else
+        log "▶️  Creating new persistent Postgres container ${PG_CONT_NAME} on 5432"
+        docker run -d --name "$PG_CONT_NAME" \
+          -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+          -e POSTGRES_DB=integration_server -p 5432:5432 postgres:15-alpine >/dev/null
+      fi
+    else
+      log "✅ Postgres container ${PG_CONT_NAME} already running"
     fi
-    # Wait until ready
+    
+    # Start persistent Redis if not already running
+    if ! docker ps --format '{{.Names}}' | grep -q "^${REDIS_CONT_NAME}$"; then
+      if docker ps -a --format '{{.Names}}' | grep -q "^${REDIS_CONT_NAME}$"; then
+        log "▶️  Restarting existing Redis container ${REDIS_CONT_NAME}"
+        docker start "$REDIS_CONT_NAME" >/dev/null
+      else
+        log "▶️  Creating new persistent Redis container ${REDIS_CONT_NAME} on 6379"
+        docker run -d --name "$REDIS_CONT_NAME" -p 6379:6379 redis:7-alpine >/dev/null
+      fi
+    else
+      log "✅ Redis container ${REDIS_CONT_NAME} already running"
+    fi
+    
+    # Wait until Postgres is ready
     log "⏳ Waiting for Postgres to be ready"
     for i in {1..30}; do
       if docker exec "$PG_CONT_NAME" pg_isready -U postgres >/dev/null 2>&1; then break; fi
@@ -124,22 +197,15 @@ finally:
     except Exception: pass
 PY
 
-    # Try Alembic smoke against detected host; if it fails, continue gracefully
-    if python - <<PY
-from alembic.config import Config
-from alembic import command
-url = f"postgresql://postgres:postgres@${PG_HOST_CANDIDATE}:5432/integration_server"
-try:
-    cfg = Config("backend/alembic.ini"); cfg.set_main_option("sqlalchemy.url", url)
-    command.upgrade(cfg, "head"); print("Alembic upgrade head OK →", url)
-except Exception as e:
-    import sys; print("Alembic smoke failed:", e); sys.exit(1)
-PY
-    then
+    # Reset database schema for clean test environment
+    DB_URL="postgresql://postgres:postgres@${PG_HOST_CANDIDATE}:5432/integration_server"
+    if reset_database_schema "$DB_URL"; then
       export CI_EMULATED_POSTGRES=1
       export CI_PG_HOST="$PG_HOST_CANDIDATE" CI_PG_PORT=5432 CI_PG_USER=postgres CI_PG_PASSWORD=postgres CI_PG_DB=integration_server
+      export REDIS_HOST="$PG_HOST_CANDIDATE" REDIS_PORT=6379
+      log "✅ Database and Redis ready for testing"
     else
-      log "⚠️  Alembic smoke migration failed; proceeding without isolated pytest env"
+      log "⚠️  Database schema reset failed; proceeding without isolated pytest env"
     fi
   else
     log "⚠️  Docker not available; running CI emulation without dockerized services"
@@ -361,9 +427,12 @@ if [[ "$RUN_GH" == true ]]; then
 fi
 
 # Cleanup CI emulation resources
-if [[ "$CI_EMULATE" == true && "$DOCKER_AVAILABLE" == true ]]; then
-  log "🧹 Stopping CI Postgres container"
-  docker stop "$PG_CONT_NAME" >/dev/null || true
+if [[ "$CI_EMULATE" == true && "$DOCKER_AVAILABLE" == true && "$KEEP_CONTAINERS" != true ]]; then
+  log "🧹 Stopping CI containers (use --keep-containers to preserve them)"
+  docker stop "$PG_CONT_NAME" "$REDIS_CONT_NAME" >/dev/null 2>&1 || true
+elif [[ "$CI_EMULATE" == true && "$DOCKER_AVAILABLE" == true && "$KEEP_CONTAINERS" == true ]]; then
+  log "🔄 Keeping containers running for next run (${PG_CONT_NAME}, ${REDIS_CONT_NAME})"
+  log "   To stop them manually: docker stop ${PG_CONT_NAME} ${REDIS_CONT_NAME}"
 fi
 
 # summary

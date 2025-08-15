@@ -4,7 +4,8 @@ from backend.security.redact import mask_secrets
 
 
 def test_encrypt_decrypt_roundtrip():
-    os.environ.setdefault("CREDENTIALS_SECRET_KEY", "ZHVtbXktZG9ub3QtdXNlLXRoaXMtaW4tcHJvZAo=" )
+    # Use a proper 32-byte base64-encoded key for testing
+    os.environ.setdefault("CREDENTIALS_SECRET_KEY", "dGVzdF9rZXlfMzJfYnl0ZXNfZGV0ZXJtaW5pc3RpYyE=")
     payload = {"access_token": "secret", "nested": {"api_key": "sk-xyz"}}
     enc = encrypt_dict(payload)
     assert isinstance(enc, dict) and "_enc" in enc

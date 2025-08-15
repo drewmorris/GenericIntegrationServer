@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status, Query, HTTPException, Header, Request
-from typing import Annotated  # noqa: F401  (kept for type hints in other modules)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -47,12 +46,12 @@ class CredentialOut(BaseModel):
 
 @router.get("/", response_model=List[CredentialOut])
 async def list_credentials(
-    organization_id: Optional[uuid.UUID] = Query(default=None),
-    user_id: Optional[uuid.UUID] = Query(default=None),
-    connector_name: Optional[str] = Query(default=None),
-    status: Optional[str] = Query(default=None),
-    db: AsyncSession = Depends(get_db),
-) -> list[m.Credential]:
+	db: AsyncSession = Depends(get_db),
+	organization_id: Optional[uuid.UUID] = Query(default=None),
+	user_id: Optional[uuid.UUID] = Query(default=None),
+	connector_name: Optional[str] = Query(default=None),
+	status: Optional[str] = Query(default=None),
+) -> list[CredentialOut]:  # Ensure the return type is a list of CredentialOut
 	stmt = select(m.Credential)
 	if organization_id is not None:
 		stmt = stmt.where(m.Credential.organization_id == organization_id)
@@ -71,15 +70,15 @@ async def list_credentials(
 		"connector_name": connector_name,
 		"status": status
 	})
-	return rows
+	return [CredentialOut.from_orm(row) for row in rows]  # Convert to Pydantic models
 
 @router.post("/", response_model=CredentialOut, status_code=status.HTTP_201_CREATED)
 async def create_credential(
-    request: Request,
-    payload: CredentialCreate,
-    db: AsyncSession = Depends(get_db),
-    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
-) -> m.Credential:
+	request: Request,
+	payload: CredentialCreate,
+	db: AsyncSession = Depends(get_db),
+	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+) -> CredentialOut:  # Ensure the return type is CredentialOut
 	try:
 		# Get client IP for audit logging
 		client_ip = (
@@ -117,7 +116,7 @@ async def create_credential(
 		)
 		
 		logger.info("credential_create id=%s connector=%s user=%s", obj.id, obj.connector_name, obj.user_id)
-		return obj
+		return CredentialOut.from_orm(obj)  # Convert to Pydantic model
 		
 	except Exception as e:
 		logger.error("Failed to create credential: %s", str(e))
@@ -155,12 +154,12 @@ class CredentialUpdate(BaseModel):
 
 @router.patch("/{cred_id}", response_model=CredentialOut)
 async def update_credential(
-    request: Request,
-    cred_id: uuid.UUID, 
-    payload: CredentialUpdate, 
-    db: AsyncSession = Depends(get_db),
-    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
-) -> m.Credential:
+	request: Request,
+	cred_id: uuid.UUID, 
+	payload: CredentialUpdate, 
+	db: AsyncSession = Depends(get_db),
+	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+) -> CredentialOut:  # Change return type to CredentialOut
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
 		raise HTTPException(status_code=404, detail="Credential not found")
@@ -203,18 +202,18 @@ async def update_credential(
 	)
 	
 	logger.info("credential_update id=%s fields=%s", cred_id, fields_updated)
-	return row
+	return CredentialOut.from_orm(row)  # Convert to Pydantic model
 
-@router.delete("/{cred_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete("/{cred_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_credential(
-    request: Request,
-    cred_id: uuid.UUID, 
-    db: AsyncSession = Depends(get_db),
-    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
-) -> None:
+	request: Request,
+	cred_id: uuid.UUID, 
+	db: AsyncSession = Depends(get_db),
+	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+):
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
-		return
+		raise HTTPException(status_code=404, detail="Credential not found")
 	
 	# Audit log before deletion
 	await audit_logger.log_credential_deleted(
@@ -235,10 +234,10 @@ class CredentialTestResult(BaseModel):
 
 @router.post("/{cred_id}/test", response_model=CredentialTestResult)
 async def test_credential(
-    request: Request,
-    cred_id: uuid.UUID, 
-    db: AsyncSession = Depends(get_db),
-    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+	request: Request,
+	cred_id: uuid.UUID, 
+	db: AsyncSession = Depends(get_db),
+	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> CredentialTestResult:
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
@@ -308,11 +307,11 @@ async def test_credential(
 
 @router.post("/{cred_id}/rotate", response_model=CredentialOut)
 async def rotate_credential_encryption(
-    request: Request,
-    cred_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
-) -> m.Credential:
+	request: Request,
+	cred_id: uuid.UUID,
+	db: AsyncSession = Depends(get_db),
+	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+) -> CredentialOut:  # Change return type to CredentialOut
 	"""Manually rotate the encryption of a credential."""
 	row = await db.get(m.Credential, cred_id)
 	if row is None:
@@ -341,7 +340,7 @@ async def rotate_credential_encryption(
 		)
 		
 		logger.info("credential_rotate id=%s new_version=%s", cred_id, row.encryption_key_version)
-		return row
+		return CredentialOut.from_orm(row)  # Convert to Pydantic model
 		
 	except Exception as e:
 		logger.error("Failed to rotate credential encryption: %s", str(e))
@@ -350,11 +349,11 @@ async def rotate_credential_encryption(
 
 @router.get("/{cred_id}/reveal")
 async def reveal_credential(
-    request: Request,
-    cred_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
-    x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret"),
+	request: Request,
+	cred_id: uuid.UUID,
+	db: AsyncSession = Depends(get_db),
+	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
+	x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret"),
 ) -> dict:
 	admin_key = os.getenv("ADMIN_API_KEY")
 	if not admin_key or x_admin_secret != admin_key:
