@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
@@ -38,8 +39,8 @@ class _FakeSession:
         self.objs[str(obj.id)] = obj
 
         # ensure obj has created_at for schema
-        if not hasattr(obj, "created_at"):
-            obj.created_at = None
+        if not hasattr(obj, "created_at") or obj.created_at is None:
+            obj.created_at = datetime.utcnow()
 
     async def commit(self):
         pass

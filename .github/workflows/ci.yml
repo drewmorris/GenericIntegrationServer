@@ -23,6 +23,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Only checkout what we need for CI
+          sparse-checkout: |
+            backend/
+            tests/
+            connectors/
+            shared_configs/
+            worker/
+            web/src/
+            web/package.json
+            web/package-lock.json
+            web/tsconfig.json
+            web/tsconfig.node.json
+            web/vite.config.ts
+            web/vitest.setup.ts
+            web/index.html
+            pyproject.toml
+            poetry.lock
+            mypy.ini
+            pytest.ini
+            .github/
+          sparse-checkout-cone-mode: false
 
       - name: Set up Python
         uses: actions/setup-python@v5

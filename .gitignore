@@ -5,13 +5,17 @@ __pycache__/
 # control pid files
 *.pid
 
-# logs
+# logs and temporary files
 /logs/
+csv_dumps/
+*.log
 
-# legacy code
+# legacy code and backups
 LegacyCode/
+backup/
 
-# node_modules
+# node_modules and build artifacts
 web/node_modules/
+web/dist/
 /web/node_modules/
 node_modules/

@@ -1,0 +1,29 @@
+# Exclude large directories from Docker builds and copies
+node_modules/
+web/node_modules/
+web/dist/
+backup/
+LegacyCode/
+logs/
+csv_dumps/
+bin/
+.git/
+*.log
+
+# Exclude development files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+
+# Exclude editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Exclude OS files
+.DS_Store
+Thumbs.db

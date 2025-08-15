@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -32,9 +33,9 @@ class ConnectorProfileOut(ConnectorProfileBase):
     id: uuid.UUID
     organization_id: uuid.UUID
     user_id: uuid.UUID
-    next_run_at: Optional[str] | None | None
-    created_at: Optional[str] | None
-    credential_id: Optional[uuid.UUID] | None
+    next_run_at: Optional[datetime] = None
+    created_at: datetime
+    credential_id: Optional[uuid.UUID] = None
     status: str = "active"
 
     model_config = {

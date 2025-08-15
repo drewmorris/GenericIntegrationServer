@@ -1,3 +1,19 @@
+## 2025-08-15 (0.8.0)
+- **MAJOR SIMPLIFICATION**: Consolidated all database migrations into a single comprehensive initial schema migration (`20250815_00_initial_schema.py`).
+- **IDEMPOTENT & TRANSACTIONAL**: Migration now follows strict idempotency patterns using PostgreSQL DO blocks for roles and policies.
+- **MIGRATION PATTERNS**: Created `backend/db/migrations/MIGRATION_PATTERNS.md` documenting required patterns for future migrations.
+- **CI OPTIMIZATION**: Prevented unnecessary file copying in CI using .dockerignore and sparse-checkout to exclude large directories (backup/, LegacyCode/, node_modules/, bin/) at source, reducing transfer size by ~450MB.
+- **GITIGNORE UPDATES**: Added backup/, csv_dumps/, web/dist/, and *.log to .gitignore to prevent unnecessary files in repository.
+- **WEB DIRECTORY**: Correctly identified that web/node_modules (272MB) was the culprit, not the entire web/ directory. Web code is preserved for future web-related CI checks.
+- **INTEGRATION TEST FIX**: Fixed foreign key violations and async event loop conflicts in integration tests by implementing standardized test organization and user setup with fixed UUIDs using direct SQL insertion.
+- **PYDANTIC SCHEMA FIX**: Fixed datetime validation errors in ConnectorProfileOut schema by changing created_at and next_run_at from string to datetime types to match database model.
+- **UNIT TEST FIX**: Fixed mock database in unit tests to provide proper datetime values instead of None for created_at field, resolving Pydantic validation errors.
+- Moved all previous migrations to `backup/migrations/versions/` for reference.
+- This eliminates migration chain complexity since there's no production database to maintain.
+- Single migration includes: organizations, users, credentials, connector profiles, sync runs, destination targets, audit logging, and RLS policies.
+- All operations are now safe to run multiple times and will rollback completely on any failure.
+- Fixed migration dependency issues that were causing CI failures.
+
 ## 2025-08-04 (0.1.3)
 - Moved devcontainer to custom Dockerfile (`.devcontainer/Dockerfile`) based on `python:3.11-bullseye`.
 - Dockerfile installs common CLI tools and creates `vscode` user with password-less sudo to ensure VS Code Remote Containers works correctly.

@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -12,6 +13,16 @@ from backend.routes import credentials as credentials_router
 from backend.routes import oauth as oauth_router
 from backend.routes import security as security_router
 from backend.logging import configure_logging
+from backend.db.startup import initialize_database
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager."""
+    # Startup
+    initialize_database()
+    yield
+    # Shutdown (if needed)
 
 app = FastAPI(
     title="Integration Server",
@@ -20,6 +31,7 @@ app = FastAPI(
     terms_of_service="https://example.com/terms",
     contact={"name": "Dev Team", "email": "dev@example.com"},
     license_info={"name": "MIT"},
+    lifespan=lifespan,
 )
 
 configure_logging()
