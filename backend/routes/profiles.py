@@ -14,6 +14,7 @@ from backend.schemas.profiles import (
     ConnectorProfileOut,
     ConnectorProfileUpdate,
 )
+from backend.orchestrator.tasks import sync_connector
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
 
@@ -105,4 +106,55 @@ async def update_profile(
         setattr(obj, k, v)
     await db.commit()
     await db.refresh(obj)
-    return ConnectorProfileOut.from_orm(obj) 
+    return ConnectorProfileOut.from_orm(obj)
+
+
+@router.post(
+    "/{profile_id}/run",
+    status_code=status.HTTP_200_OK,
+    summary="Trigger sync run",
+    description="Manually trigger a sync run for the specified connector profile.",
+)
+async def trigger_profile_sync(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Trigger an immediate sync run for a connector profile."""
+    # Verify profile exists
+    obj = await db.get(m.ConnectorProfile, profile_id)
+    if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    
+    # Trigger the sync via Celery
+    task = sync_connector.delay(str(profile_id), str(obj.organization_id), str(obj.user_id))
+    
+    return {"message": "Sync triggered", "task_id": task.id, "profile_id": str(profile_id)}
+
+
+@router.get(
+    "/{profile_id}/runs",
+    summary="List sync runs for profile",
+    description="Return historical sync run rows for the given connector profile.",
+)
+async def list_profile_runs(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """List sync runs for a specific profile."""
+    # Verify profile exists
+    obj = await db.get(m.ConnectorProfile, profile_id)
+    if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    
+    # Get sync runs for this profile
+    result = await db.execute(
+        select(m.SyncRun).where(m.SyncRun.profile_id == profile_id).order_by(m.SyncRun.started_at.desc())
+    )
+    runs = result.scalars().all()
+    
+    return [
+        {
+            "id": str(r.id),
+            "profile_id": str(r.profile_id),
+            "status": r.status,
+            "started_at": r.started_at.isoformat() if r.started_at else None,
+            "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            "records_synced": r.records_synced,
+            "created_at": r.started_at.isoformat() if r.started_at else None,
+        }
+        for r in runs
+    ] 

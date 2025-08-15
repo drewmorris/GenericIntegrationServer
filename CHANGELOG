@@ -8,6 +8,8 @@
 - **INTEGRATION TEST FIX**: Fixed foreign key violations and async event loop conflicts in integration tests by implementing standardized test organization and user setup with fixed UUIDs using direct SQL insertion.
 - **PYDANTIC SCHEMA FIX**: Fixed datetime validation errors in ConnectorProfileOut schema by changing created_at and next_run_at from string to datetime types to match database model.
 - **UNIT TEST FIX**: Fixed mock database in unit tests to provide proper datetime values instead of None for created_at field, resolving Pydantic validation errors.
+- **API ENDPOINTS**: Added missing sync run endpoints to profiles router (POST /{profile_id}/run and GET /{profile_id}/runs) to match integration test expectations.
+- **CI REDIS SERVICE**: Added Redis service to GitHub Actions workflow to support Celery task queue operations in integration tests.
 - Moved all previous migrations to `backup/migrations/versions/` for reference.
 - This eliminates migration chain complexity since there's no production database to maintain.
 - Single migration includes: organizations, users, credentials, connector profiles, sync runs, destination targets, audit logging, and RLS policies.
