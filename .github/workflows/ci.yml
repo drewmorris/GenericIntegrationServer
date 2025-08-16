@@ -90,5 +90,6 @@ jobs:
           POSTGRES_DB: integration_server
           REDIS_HOST: localhost
           REDIS_PORT: 56379
+          TESTING: "1"
         run: |
           poetry run pytest -q 

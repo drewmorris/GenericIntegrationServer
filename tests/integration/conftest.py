@@ -24,6 +24,8 @@ def app():
     Create FastAPI application instance for testing.
     This triggers the normal startup process including database initialization.
     """
+    # Set environment variable to enable synchronous Celery execution
+    os.environ["TESTING"] = "1"
     from backend.main import app
     return app
 
