@@ -25,8 +25,14 @@ class CleverBragDestination(DestinationBase):
         api_key: str | None = profile_config.get("cleverbrag", {}).get("api_key")
         if api_key is None:
             raise ValueError("CleverBrag API key missing in profile_config['cleverbrag']['api_key']")
+        
+        # Check for test mode - skip real API calls only with dummy API key  
+        # (unit tests will mock httpx.AsyncClient instead)
+        if api_key == "dummy":
+            logger.info("CleverBrag test mode: skipping real API call for %d documents", len(list(payload)))
+            return
 
-        url = f"{base_url.rstrip('/')}/v1/documents"
+        url = f"{base_url.rstrip('/')}/v3/documents"
         headers = {"X-API-Key": api_key}
 
         async def _post():

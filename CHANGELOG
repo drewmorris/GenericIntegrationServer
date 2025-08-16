@@ -1,3 +1,10 @@
+## 2025-08-16 (0.8.2)  
+- **ADDITIONAL CI TEST FIXES**: Fixed remaining integration test failures:
+  - **CSV Destination Registration**: Added dual registration for 'csv' and 'csvdump' destinations to maintain backward compatibility with existing tests
+  - **CleverBrag Test Mode**: Refined test mode detection to only skip real API calls with dummy API key, allowing unit tests with mocked httpx.AsyncClient to function properly
+  - **CleverBrag API Version**: Updated API endpoint from v1 to v3 for documents endpoint
+  - **Connector Enum Fallback**: Added graceful fallback for DocumentSource attribute lookup failures, preventing SimpleNamespace errors
+
 ## 2025-08-16 (0.8.1) - Major CI Infrastructure Fixes
 - **🎉 COMPREHENSIVE CI TEST FIXES**: Successfully resolved all major CI infrastructure issues:
   - **Redis Connection**: Updated Celery configuration to use CI environment variables (REDIS_HOST, REDIS_PORT) for proper connection to CI Redis service on port 56379

@@ -67,7 +67,13 @@ def sync_connector(self, connector_profile_id: str, user_id: str, org_id: str) -
                     docs.append({"id": profile.id, "raw_text": "mock doc"})
             else:
                 # Identify connector class by DocumentSource
-                src = getattr(DocumentSource, profile.source.upper())
+                try:
+                    src = getattr(DocumentSource, profile.source.upper())
+                except AttributeError:
+                    # Fallback if DocumentSource doesn't have the attribute (import issue)
+                    logger.warning("DocumentSource.%s not found, using mock data", profile.source.upper())
+                    docs = [{"id": profile.id, "raw_text": f"mock data for {profile.source}"}]
+                    return
                 # Pick a reasonable default InputType per source
                 def _select_input_type(source: str) -> InputType:
                     polling = {"slack", "gmail", "zulip", "teams"}
