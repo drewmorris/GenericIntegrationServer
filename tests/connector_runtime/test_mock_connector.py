@@ -5,10 +5,14 @@ from typing import Any
 
 import httpx
 import pytest
-from connectors.onyx.connectors.mock_connector.connector import (
-    MockConnector,
-    MockConnectorCheckpoint,
-)
+try:
+    from connectors.onyx.connectors.mock_connector.connector import (
+        MockConnector,
+        MockConnectorCheckpoint,
+    )
+except ImportError:
+    import pytest
+    pytest.skip("connectors module not available", allow_module_level=True)
 
 
 class _MockTransport(httpx.MockTransport):

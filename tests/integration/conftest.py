@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from fastapi.testclient import TestClient
 
+
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
@@ -36,13 +37,13 @@ def client(app):
     logger.info("🔧 Starting FastAPI test client (includes database initialization)...")
     
     with TestClient(app) as test_client:
-        logger.info("✅ Integration test client ready")
-        
-        # Set up test data using the API instead of direct database access
-        _setup_test_data_via_api(test_client)
-        
-        yield test_client
-        logger.info("🧹 Integration test session complete")
+            logger.info("✅ Integration test client ready")
+            
+            # Set up test data using the API instead of direct database access
+            _setup_test_data_via_api(test_client)
+            
+            yield test_client
+            logger.info("🧹 Integration test session complete")
 
 
 @pytest.fixture(autouse=True)
@@ -197,3 +198,6 @@ def test_org_user_ids():
         "org_id": "12345678-1234-5678-9012-123456789012",
         "user_id": "87654321-4321-8765-2109-876543210987"
     }
+
+
+

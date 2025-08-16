@@ -180,104 +180,76 @@ def upgrade() -> None:
     op.execute("ALTER TABLE syncrun ENABLE ROW LEVEL SECURITY")
 
     # Create RLS policies for organization isolation (idempotent)
+    # First drop existing policies to ensure they use updated logic
+    op.execute("""
+        DROP POLICY IF EXISTS organization_isolation ON organization;
+        DROP POLICY IF EXISTS user_org_isolation ON "user";
+        DROP POLICY IF EXISTS usertoken_user_isolation ON usertoken;
+        DROP POLICY IF EXISTS credential_org_isolation ON credential;
+        DROP POLICY IF EXISTS credential_audit_org_isolation ON credential_audit_log;
+        DROP POLICY IF EXISTS connectorprofile_org_isolation ON connectorprofile;
+        DROP POLICY IF EXISTS destinationtarget_org_isolation ON destinationtarget;
+        DROP POLICY IF EXISTS syncrun_org_isolation ON syncrun;
+    """)
+    
     # Organization: users can only see their own org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'organization' AND policyname = 'organization_isolation') THEN
-                CREATE POLICY organization_isolation ON organization
-                FOR ALL TO authenticated
-                USING (id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid));
-            END IF;
-        END $$
+        CREATE POLICY organization_isolation ON organization
+        FOR ALL TO authenticated
+        USING (id = current_setting('app.current_org')::uuid);
     """)
 
     # User: users can only see users in their org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'user' AND policyname = 'user_org_isolation') THEN
-                CREATE POLICY user_org_isolation ON "user"
-                FOR ALL TO authenticated
-                USING (organization_id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid));
-            END IF;
-        END $$
+        CREATE POLICY user_org_isolation ON "user"
+        FOR ALL TO authenticated
+        USING (organization_id = current_setting('app.current_org')::uuid);
     """)
 
     # UserToken: users can only see their own tokens
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'usertoken' AND policyname = 'usertoken_user_isolation') THEN
-                CREATE POLICY usertoken_user_isolation ON usertoken
-                FOR ALL TO authenticated
-                USING (user_id = current_setting('app.user_id')::uuid);
-            END IF;
-        END $$
+        CREATE POLICY usertoken_user_isolation ON usertoken
+        FOR ALL TO authenticated
+        USING (user_id IN (SELECT id FROM "user" WHERE organization_id = current_setting('app.current_org')::uuid));
     """)
 
     # Credential: users can only see credentials in their org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'credential' AND policyname = 'credential_org_isolation') THEN
-                CREATE POLICY credential_org_isolation ON credential
-                FOR ALL TO authenticated
-                USING (organization_id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid));
-            END IF;
-        END $$
+        CREATE POLICY credential_org_isolation ON credential
+        FOR ALL TO authenticated
+        USING (organization_id = current_setting('app.current_org')::uuid);
     """)
 
     # Credential audit log: users can only see audit logs for their org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'credential_audit_log' AND policyname = 'credential_audit_org_isolation') THEN
-                CREATE POLICY credential_audit_org_isolation ON credential_audit_log
-                FOR ALL TO authenticated
-                USING (organization_id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid));
-            END IF;
-        END $$
+        CREATE POLICY credential_audit_org_isolation ON credential_audit_log
+        FOR ALL TO authenticated
+        USING (organization_id = current_setting('app.current_org')::uuid);
     """)
 
     # ConnectorProfile: users can only see profiles in their org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'connectorprofile' AND policyname = 'connectorprofile_org_isolation') THEN
-                CREATE POLICY connectorprofile_org_isolation ON connectorprofile
-                FOR ALL TO authenticated
-                USING (organization_id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid));
-            END IF;
-        END $$
+        CREATE POLICY connectorprofile_org_isolation ON connectorprofile
+        FOR ALL TO authenticated
+        USING (organization_id = current_setting('app.current_org')::uuid);
     """)
 
     # DestinationTarget: users can only see targets in their org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'destinationtarget' AND policyname = 'destinationtarget_org_isolation') THEN
-                CREATE POLICY destinationtarget_org_isolation ON destinationtarget
-                FOR ALL TO authenticated
-                USING (organization_id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid));
-            END IF;
-        END $$
+        CREATE POLICY destinationtarget_org_isolation ON destinationtarget
+        FOR ALL TO authenticated
+        USING (organization_id = current_setting('app.current_org')::uuid);
     """)
 
     # SyncRun: users can only see sync runs for profiles in their org
     op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'syncrun' AND policyname = 'syncrun_org_isolation') THEN
-                CREATE POLICY syncrun_org_isolation ON syncrun
-                FOR ALL TO authenticated
-                USING (EXISTS (
-                    SELECT 1 FROM connectorprofile 
-                    WHERE connectorprofile.id = syncrun.profile_id 
-                    AND connectorprofile.organization_id = (SELECT organization_id FROM "user" WHERE id = current_setting('app.user_id')::uuid)
-                ));
-            END IF;
-        END $$
+        CREATE POLICY syncrun_org_isolation ON syncrun
+        FOR ALL TO authenticated
+        USING (EXISTS (
+            SELECT 1 FROM connectorprofile
+            WHERE connectorprofile.id = syncrun.profile_id
+            AND connectorprofile.organization_id = current_setting('app.current_org')::uuid
+        ));
     """)
 
 

@@ -1,3 +1,11 @@
+## 2025-08-16 (0.8.1)
+- **CI TEST FIXES**: Fixed multiple categories of CI test failures:
+  - **Redis Connection**: Updated Celery configuration to use CI environment variables (REDIS_HOST, REDIS_PORT) for proper connection to CI Redis service on port 56379
+  - **RLS Policies**: Fixed Row-Level Security policies to use correct session variable (`app.current_org` instead of `app.user_id`) and updated migration to drop/recreate policies to ensure changes take effect
+  - **Pydantic Deprecation**: Updated deprecated Pydantic v2 methods (`.from_orm()` → `.model_validate()`, `.dict()` → `.model_dump()`) in profiles and credentials routes
+  - **JSON Logging**: Fixed JSON serialization error in logging formatter by adding default handler for non-serializable objects like URLs
+- **MIGRATION UPDATES**: Modified initial schema migration to drop existing RLS policies before creating new ones to ensure policy changes are applied correctly in existing databases
+
 ## 2025-08-15 (0.8.0)
 - **MAJOR SIMPLIFICATION**: Consolidated all database migrations into a single comprehensive initial schema migration (`20250815_00_initial_schema.py`).
 - **IDEMPOTENT & TRANSACTIONAL**: Migration now follows strict idempotency patterns using PostgreSQL DO blocks for roles and policies.

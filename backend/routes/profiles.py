@@ -61,7 +61,7 @@ async def create_profile(payload: ConnectorProfileCreate, db: AsyncSession = Dep
     db.add(obj)
     await db.commit()
     await db.refresh(obj)
-    return ConnectorProfileOut.from_orm(obj)
+    return ConnectorProfileOut.model_validate(obj)
 
 @router.post(
     "",
@@ -83,7 +83,7 @@ async def get_profile(profile_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     obj = await db.get(m.ConnectorProfile, profile_id)
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    return ConnectorProfileOut.from_orm(obj)
+    return ConnectorProfileOut.model_validate(obj)
 
 
 @router.patch(
@@ -101,12 +101,12 @@ async def update_profile(
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
 
-    data = payload.dict(exclude_unset=True)
+    data = payload.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(obj, k, v)
     await db.commit()
     await db.refresh(obj)
-    return ConnectorProfileOut.from_orm(obj)
+    return ConnectorProfileOut.model_validate(obj)
 
 
 @router.post(

@@ -70,7 +70,7 @@ async def list_credentials(
 		"connector_name": connector_name,
 		"status": status
 	})
-	return [CredentialOut.from_orm(row) for row in rows]  # Convert to Pydantic models
+	return [CredentialOut.model_validate(row) for row in rows]  # Convert to Pydantic models
 
 @router.post("/", response_model=CredentialOut, status_code=status.HTTP_201_CREATED)
 async def create_credential(
@@ -116,7 +116,7 @@ async def create_credential(
 		)
 		
 		logger.info("credential_create id=%s connector=%s user=%s", obj.id, obj.connector_name, obj.user_id)
-		return CredentialOut.from_orm(obj)  # Convert to Pydantic model
+		return CredentialOut.model_validate(obj)  # Convert to Pydantic model
 		
 	except Exception as e:
 		logger.error("Failed to create credential: %s", str(e))
@@ -202,7 +202,7 @@ async def update_credential(
 	)
 	
 	logger.info("credential_update id=%s fields=%s", cred_id, fields_updated)
-	return CredentialOut.from_orm(row)  # Convert to Pydantic model
+	return CredentialOut.model_validate(row)  # Convert to Pydantic model
 
 @router.delete("/{cred_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_credential(
@@ -340,7 +340,7 @@ async def rotate_credential_encryption(
 		)
 		
 		logger.info("credential_rotate id=%s new_version=%s", cred_id, row.encryption_key_version)
-		return CredentialOut.from_orm(row)  # Convert to Pydantic model
+		return CredentialOut.model_validate(row)  # Convert to Pydantic model
 		
 	except Exception as e:
 		logger.error("Failed to rotate credential encryption: %s", str(e))
