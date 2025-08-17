@@ -1,4 +1,4 @@
-## 2025-08-16 (0.8.9) - OAuth Legacy Pattern Implementation
+## 2025-08-16 (0.8.9) - OAuth Legacy Pattern Implementation + Critical Fixes
 - **OAUTH REFACTORED TO MATCH LEGACY ONYX**: Complete rewrite to follow battle-tested legacy pattern:
   - **BACKEND REDIRECTS**: Google now redirects directly to backend (not frontend)
   - **REDIS STATE MANAGEMENT**: OAuth state stored in Redis with UUID keys for security
@@ -6,6 +6,10 @@
   - **LEGACY CREDENTIAL FORMAT**: Matches exact credential structure from legacy Onyx
   - **STATE VALIDATION**: Proper OAuth state validation prevents CSRF attacks
   - **SESSION CLEANUP**: Redis sessions cleaned up after successful OAuth
+- **CRITICAL CREDENTIAL FORMAT FIXES**:
+  - **FIXED**: `google_drive_tokens` → `google_tokens` (legacy field name)
+  - **FIXED**: `primary_admin_email` → `google_primary_admin` (legacy field name)
+  - **VERIFIED**: All credential structures now match legacy exactly
 - **SECURITY ENHANCEMENTS**:
   - **UUID-based state**: Base64-encoded UUID state parameters
   - **Redis expiry**: 10-minute OAuth session timeout

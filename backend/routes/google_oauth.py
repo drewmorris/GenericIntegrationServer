@@ -262,8 +262,8 @@ async def gmail_oauth_callback(
             
             # Create credential dict in legacy format
             credential_dict = {
-                "google_drive_tokens": json.dumps(authorized_user_info),
-                "primary_admin_email": session_data["email"],
+                "google_tokens": json.dumps(authorized_user_info),
+                "google_primary_admin": session_data["email"],
                 "authentication_method": "oauth_interactive"
             }
             
@@ -369,8 +369,8 @@ async def google_drive_oauth_callback(
             
             # Create credential dict in legacy format
             credential_dict = {
-                "google_drive_tokens": json.dumps(authorized_user_info),
-                "primary_admin_email": session_data["email"],
+                "google_tokens": json.dumps(authorized_user_info),
+                "google_primary_admin": session_data["email"],
                 "authentication_method": "oauth_interactive"
             }
             
