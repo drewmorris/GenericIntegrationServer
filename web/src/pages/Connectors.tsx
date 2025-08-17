@@ -26,7 +26,7 @@ function randState(): string {
       c.getRandomValues(arr);
       return [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
     }
-  } catch {}
+  } catch { }
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
 
@@ -66,7 +66,16 @@ export default function ConnectorsPage() {
       const verifier = randomVerifier();
       const challenge = await s256Challenge(verifier);
       const next = `${window.location.origin}/connectors`;
-      const { data } = await api.get<{ authorization_url: string }>(`/oauth/${def.name}/start`, {
+
+      // Use custom Google OAuth endpoints for Gmail and Google Drive
+      let oauthEndpoint = `/oauth/${def.name}/start`;
+      if (def.name === 'gmail') {
+        oauthEndpoint = '/oauth/google/gmail/start';
+      } else if (def.name === 'google_drive') {
+        oauthEndpoint = '/oauth/google/drive/start';
+      }
+
+      const { data } = await api.get<{ authorization_url: string }>(oauthEndpoint, {
         params: {
           state,
           organization_id: orgId,
@@ -78,8 +87,13 @@ export default function ConnectorsPage() {
         },
       });
       window.location.href = data.authorization_url;
-    } catch {
-      setMessage('OAuth not supported or failed to start.');
+    } catch (error: any) {
+      console.error('OAuth error:', error);
+      if (error.response?.data?.detail) {
+        setMessage(`OAuth error: ${error.response.data.detail}`);
+      } else {
+        setMessage('OAuth not supported or failed to start.');
+      }
     }
   };
 

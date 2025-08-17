@@ -18,4 +18,5 @@ email-validator==2.2.0
 cryptography
 pyairtable
 retry
-asana 
+asana
+redis 

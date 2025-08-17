@@ -11,6 +11,7 @@ from backend.routes import targets as targets_router
 from backend.routes import connectors as connectors_router
 from backend.routes import credentials as credentials_router
 from backend.routes import oauth as oauth_router
+from backend.routes import google_oauth as google_oauth_router
 from backend.routes import security as security_router
 from backend.logging import configure_logging
 from backend.db.startup import initialize_database
@@ -57,6 +58,7 @@ app.include_router(targets_router.router)
 app.include_router(connectors_router.router)
 app.include_router(credentials_router.router)
 app.include_router(oauth_router.router)
+app.include_router(google_oauth_router.router)
 app.include_router(security_router.router)
 
 

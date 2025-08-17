@@ -57,6 +57,7 @@ export default function App() {
           path="/connectors"
           element={accessToken ? <ConnectorsPage /> : <Navigate to="/login" />}
         />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

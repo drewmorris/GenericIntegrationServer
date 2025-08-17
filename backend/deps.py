@@ -12,4 +12,7 @@ def get_org_id(x_org_id: str | None = Header(default=None, alias="X-Org-ID")) ->
     try:
         return uuid.UUID(x_org_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid X-Org-ID header") from exc 
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid X-Org-ID header") from exc
+
+
+ 

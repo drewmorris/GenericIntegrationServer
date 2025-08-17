@@ -19,3 +19,6 @@ web/node_modules/
 web/dist/
 /web/node_modules/
 node_modules/
+start_system.sh
+LegacyCode/web/public/Meta.svg
+LegacyCode/web/public/Microsoft.svg

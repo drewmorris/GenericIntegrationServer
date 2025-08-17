@@ -71,6 +71,13 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_DB=integration_server
 REDIS_URL="redis://$REDIS_IP:6379/0"
 
+# Preserve existing .core_env if it exists and has additional variables
+TEMP_CORE_ENV=""
+if [ -f "$ROOT_DIR/.core_env" ]; then
+  # Extract any non-standard variables (not the ones we're about to set)
+  TEMP_CORE_ENV=$(grep -v "^POSTGRES_HOST=\|^POSTGRES_PORT=\|^POSTGRES_USER=\|^POSTGRES_PASSWORD=\|^POSTGRES_DB=\|^REDIS_URL=\|^CELERY_BROKER_URL=\|^CELERY_RESULT_BACKEND=" "$ROOT_DIR/.core_env" 2>/dev/null || true)
+fi
+
 cat > "$ROOT_DIR/.core_env" <<ENV
 POSTGRES_HOST=$POSTGRES_HOST
 POSTGRES_PORT=$POSTGRES_PORT
@@ -81,6 +88,12 @@ REDIS_URL=$REDIS_URL
 CELERY_BROKER_URL=$REDIS_URL
 CELERY_RESULT_BACKEND=$REDIS_URL
 ENV
+
+# Append any preserved variables
+if [ -n "$TEMP_CORE_ENV" ]; then
+  echo "" >> "$ROOT_DIR/.core_env"
+  echo "$TEMP_CORE_ENV" >> "$ROOT_DIR/.core_env"
+fi
 
 log "✅ Core service endpoints written to .core_env"
 
