@@ -23,8 +23,8 @@ start_system.sh
 LegacyCode/web/public/Meta.svg
 LegacyCode/web/public/Microsoft.svg
 
+# Environment and temporary files
 .core_env
 purge-env.ps1
-.core_env
 backend/__pycache__/deps.cpython-311.pyc
 backend/__pycache__/main.cpython-311.pyc
