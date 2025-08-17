@@ -30,6 +30,15 @@ class _FakeSession:
             def all(self):
                 return list(self._items)
 
+            def scalar_one_or_none(self):
+                items = list(self._items)
+                if len(items) == 0:
+                    return None
+                elif len(items) == 1:
+                    return items[0]
+                else:
+                    raise ValueError("Multiple items found when expecting one or none")
+
         return _Res(self.objs.values())
 
     async def get(self, model, obj_id):  # noqa: D401, ARG002
@@ -57,7 +66,19 @@ def client(monkeypatch):
         async with fake_db as sess:
             yield sess
 
+    def _override_get_current_user():
+        return {
+            "user_id": "87654321-4321-8765-2109-876543210987",
+            "organization_id": "12345678-1234-5678-9012-123456789012",
+            "email": "test@example.com"
+        }
+
+    def _override_get_current_org_id():
+        return "12345678-1234-5678-9012-123456789012"
+
     app.dependency_overrides[profiles_router.get_db] = _override_get_db  # type: ignore[arg-type]
+    app.dependency_overrides[profiles_router.get_current_user] = _override_get_current_user  # type: ignore[arg-type]
+    app.dependency_overrides[profiles_router.get_current_org_id] = _override_get_current_org_id  # type: ignore[arg-type]
     with TestClient(app) as c:
         yield c, fake_db
     app.dependency_overrides.clear()

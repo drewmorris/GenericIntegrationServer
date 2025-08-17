@@ -2,7 +2,7 @@ import pytest
 import uuid
 import os
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, Mock
 
 from backend.security.crypto import (
     encrypt_dict, maybe_decrypt_dict, needs_key_rotation, rotate_encryption,
@@ -113,6 +113,8 @@ class TestAuditLogging:
     def mock_db(self):
         """Mock database session with async methods."""
         db = AsyncMock()
+        # Make add() synchronous since it doesn't need to be awaited
+        db.add = Mock()
         return db
     
     @pytest.fixture

@@ -38,6 +38,25 @@ def client(app):
     """
     logger.info("🔧 Starting FastAPI test client (includes database initialization)...")
     
+    # Mock authentication for integration tests
+    def _override_get_current_user():
+        return {
+            "user_id": "87654321-4321-8765-2109-876543210987",
+            "organization_id": "12345678-1234-5678-9012-123456789012",
+            "email": "test@example.com",
+            "role": "admin"
+        }
+
+    def _override_get_current_org_id():
+        return "12345678-1234-5678-9012-123456789012"
+
+    # Import the dependency functions
+    from backend.deps import get_current_user, get_current_org_id
+    
+    # Override authentication for all routes
+    app.dependency_overrides[get_current_user] = _override_get_current_user
+    app.dependency_overrides[get_current_org_id] = _override_get_current_org_id
+    
     with TestClient(app) as test_client:
             logger.info("✅ Integration test client ready")
             
@@ -46,6 +65,9 @@ def client(app):
             
             yield test_client
             logger.info("🧹 Integration test session complete")
+    
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(autouse=True)

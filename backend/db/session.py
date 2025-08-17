@@ -4,11 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from backend.db.rls import set_current_org
 
-from typing import Annotated
-import uuid
 from typing import AsyncGenerator
-from fastapi import Depends
-from backend.deps import get_org_id
 
 
 DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
@@ -29,8 +25,7 @@ AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 )
 
 
-async def get_db(org_id: Annotated[uuid.UUID, Depends(get_org_id)] | None = None) -> AsyncGenerator[AsyncSession, None]:  # noqa: D401
+async def get_db() -> AsyncGenerator[AsyncSession, None]:  # noqa: D401
+    """Get database session."""
     async with AsyncSessionLocal() as session:
-        if org_id is not None:
-            await set_current_org(session, org_id)
         yield session 

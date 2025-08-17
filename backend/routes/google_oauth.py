@@ -17,40 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.db.session import get_db
 from backend.db import models as m
 from backend.security.crypto import encrypt_dict
-# JWT authentication function (avoiding circular imports)
-async def get_current_user(
-    authorization: str | None = Header(default=None, alias="Authorization"),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    """Extract current user from JWT token (for OAuth flows)."""
-    from backend.settings import get_settings
-    from jose import jwt
-    from sqlalchemy import select
-    
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    
-    token = authorization.split(" ", 1)[1]
-    settings = get_settings()
-    
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-    except Exception as exc:
-        raise HTTPException(status_code=401, detail="Invalid token") from exc
-    
-    email = payload.get("sub")
-    if not email:
-        raise HTTPException(status_code=400, detail="Token missing subject")
-    
-    user = (await db.execute(select(m.User).where(m.User.email == email))).scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "user_id": str(user.id),
-        "organization_id": str(user.organization_id),
-        "email": email,
-    }
+from backend.deps import get_current_user
 
 router = APIRouter(prefix="/oauth/google", tags=["Google OAuth"])
 
@@ -225,7 +192,13 @@ async def gmail_oauth_callback(
                 detail=f"Gmail OAuth failed - OAuth state key not found: key={r_key}"
             )
         
-        session_data = json.loads(session_json)
+        # Handle both string and bytes responses from Redis
+        if isinstance(session_json, bytes):
+            session_json_str = session_json.decode('utf-8')
+        else:
+            session_json_str = str(session_json)
+        
+        session_data = json.loads(session_json_str)
         
         # Build redirect URI (must match what was sent to Google)  
         base_url = f"{request.url.scheme}://{request.url.netloc}"
@@ -332,7 +305,13 @@ async def google_drive_oauth_callback(
                 detail=f"Google Drive OAuth failed - OAuth state key not found: key={r_key}"
             )
         
-        session_data = json.loads(session_json)
+        # Handle both string and bytes responses from Redis
+        if isinstance(session_json, bytes):
+            session_json_str = session_json.decode('utf-8')
+        else:
+            session_json_str = str(session_json)
+        
+        session_data = json.loads(session_json_str)
         
         # Build redirect URI (must match what was sent to Google)
         base_url = f"{request.url.scheme}://{request.url.netloc}"

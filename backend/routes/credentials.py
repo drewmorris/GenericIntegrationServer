@@ -15,6 +15,7 @@ from backend.security.audit import get_audit_logger, AuditLogger
 import logging
 import os
 from datetime import datetime
+from backend.deps import get_current_user, get_current_org_id
 
 router = APIRouter(prefix="/credentials", tags=["Credentials"])
 logger = logging.getLogger(__name__)
@@ -41,20 +42,17 @@ class CredentialOut(BaseModel):
 	created_at: datetime
 	updated_at: datetime
 
-	class Config:
-		from_attributes = True
+	model_config = {"from_attributes": True}
 
 @router.get("/", response_model=List[CredentialOut])
 async def list_credentials(
 	db: AsyncSession = Depends(get_db),
-	organization_id: Optional[uuid.UUID] = Query(default=None),
+	current_org_id: str = Depends(get_current_org_id),
 	user_id: Optional[uuid.UUID] = Query(default=None),
 	connector_name: Optional[str] = Query(default=None),
 	status: Optional[str] = Query(default=None),
 ) -> list[CredentialOut]:  # Ensure the return type is a list of CredentialOut
-	stmt = select(m.Credential)
-	if organization_id is not None:
-		stmt = stmt.where(m.Credential.organization_id == organization_id)
+	stmt = select(m.Credential).where(m.Credential.organization_id == current_org_id)
 	if user_id is not None:
 		stmt = stmt.where(m.Credential.user_id == user_id)
 	if connector_name is not None:
@@ -65,7 +63,7 @@ async def list_credentials(
 	res = await db.execute(stmt)
 	rows = list(res.scalars().all())
 	logger.info("credentials_list count=%s filters=%s", len(rows), {
-		"organization_id": organization_id,
+		"organization_id": current_org_id,
 		"user_id": user_id, 
 		"connector_name": connector_name,
 		"status": status
@@ -77,6 +75,7 @@ async def create_credential(
 	request: Request,
 	payload: CredentialCreate,
 	db: AsyncSession = Depends(get_db),
+	current_user: dict = Depends(get_current_user),
 	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> CredentialOut:  # Ensure the return type is CredentialOut
 	try:
@@ -89,8 +88,8 @@ async def create_credential(
 		
 		obj = m.Credential(
 			id=uuid.uuid4(),
-			organization_id=payload.organization_id,
-			user_id=payload.user_id,
+			organization_id=current_user["organization_id"],
+			user_id=current_user["user_id"],
 			connector_name=payload.connector_name,
 			provider_key=payload.provider_key,
 			credential_json=encrypt_dict(payload.credential_json),
@@ -124,8 +123,19 @@ async def create_credential(
 		raise HTTPException(status_code=500, detail="Failed to create credential")
 
 @router.get("/{cred_id}")
-async def get_credential(cred_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
-	row = await db.get(m.Credential, cred_id)
+async def get_credential(
+	cred_id: uuid.UUID,
+	db: AsyncSession = Depends(get_db),
+	current_org_id: str = Depends(get_current_org_id),
+) -> dict:
+	# Verify credential belongs to current org
+	result = await db.execute(
+		select(m.Credential).where(
+			m.Credential.id == cred_id,
+			m.Credential.organization_id == current_org_id
+		)
+	)
+	row = result.scalar_one_or_none()
 	if row is None:
 		raise HTTPException(status_code=404, detail="Credential not found")
 	logger.info("credential_get id=%s connector=%s", cred_id, row.connector_name)
@@ -158,9 +168,17 @@ async def update_credential(
 	cred_id: uuid.UUID, 
 	payload: CredentialUpdate, 
 	db: AsyncSession = Depends(get_db),
+	current_org_id: str = Depends(get_current_org_id),
 	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ) -> CredentialOut:  # Change return type to CredentialOut
-	row = await db.get(m.Credential, cred_id)
+	# Verify credential belongs to current org
+	result = await db.execute(
+		select(m.Credential).where(
+			m.Credential.id == cred_id,
+			m.Credential.organization_id == current_org_id
+		)
+	)
+	row = result.scalar_one_or_none()
 	if row is None:
 		raise HTTPException(status_code=404, detail="Credential not found")
 	
@@ -209,9 +227,17 @@ async def delete_credential(
 	request: Request,
 	cred_id: uuid.UUID, 
 	db: AsyncSession = Depends(get_db),
+	current_org_id: str = Depends(get_current_org_id),
 	audit_logger: AuditLogger = Depends(get_audit_logger),  # type: ignore[assignment]
 ):
-	row = await db.get(m.Credential, cred_id)
+	# Verify credential belongs to current org
+	result = await db.execute(
+		select(m.Credential).where(
+			m.Credential.id == cred_id,
+			m.Credential.organization_id == current_org_id
+		)
+	)
+	row = result.scalar_one_or_none()
 	if row is None:
 		raise HTTPException(status_code=404, detail="Credential not found")
 	
