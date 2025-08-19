@@ -13,6 +13,7 @@ from backend.routes import credentials as credentials_router
 from backend.routes import oauth as oauth_router
 from backend.routes import google_oauth as google_oauth_router
 from backend.routes import security as security_router
+from backend.routes import api_keys as api_keys_router
 from backend.logging import configure_logging
 from backend.db.startup import initialize_database
 
@@ -60,6 +61,7 @@ app.include_router(credentials_router.router)
 app.include_router(oauth_router.router)
 app.include_router(google_oauth_router.router)
 app.include_router(security_router.router)
+app.include_router(api_keys_router.router)
 
 
 @app.get("/health", tags=["Health"])

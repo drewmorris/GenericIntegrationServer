@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column, declared_attr
 
 from backend.db.base import Base
+from backend.auth.schemas import UserRole
 
 
 # ---------------------------
@@ -78,18 +79,13 @@ class Organization(Base):
     users: Mapped[list["User"]] = relationship(back_populates="organization", cascade="all,delete-orphan")
 
 
-class UserRole(str):  # simple string enum for now
-    ADMIN = "admin"
-    MEMBER = "member"
-
-
 class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
 
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
     hashed_pw: Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[str] = mapped_column(String, default=UserRole.MEMBER, nullable=False)
+    role: Mapped[str] = mapped_column(String, default=UserRole.BASIC.value, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     organization: Mapped["Organization"] = relationship(back_populates="users")
@@ -164,4 +160,24 @@ class DestinationTarget(Base):
 
     __table_args__ = (
         UniqueConstraint("organization_id", "user_id", "name", name="uq_target_org_user_name"),
-    ) 
+    )
+
+
+# ---------------------------
+# API Key Management 
+# ---------------------------
+class ApiKey(Base):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    hashed_api_key: Mapped[str] = mapped_column(String, unique=True)
+    api_key_display: Mapped[str] = mapped_column(String, unique=True)
+    # the ID of the "user" who represents the access credentials for the API key
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"), nullable=False)
+    # the ID of the user who owns the key
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+
+    # Add this relationship to access the User object via user_id
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id]) 

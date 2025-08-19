@@ -1,3 +1,23 @@
+## 2025-08-19 (0.9.0) - API Key Management Implementation + Auth Schema Fixes
+- **API KEY MANAGEMENT**: Complete API key system following exact legacy patterns:
+  - **CRUD OPERATIONS**: Create, read, update, delete, and regenerate API keys
+  - **LEGACY STRUCTURE**: Matches exact ApiKeyDescriptor from legacy Onyx
+  - **USER ROLE INTEGRATION**: Uses UserRole enum from backend.auth.schemas
+  - **DATABASE MODEL**: ApiKey table with proper relationships and constraints
+  - **AUTHENTICATION**: API key authentication via get_current_user_or_api_key
+  - **SECURITY**: Hashed storage, displayable keys, user ownership tracking
+- **AUTH SCHEMA COMPLETION**: Added missing authentication schemas:
+  - **REQUEST SCHEMAS**: SignupRequest, LoginRequest, RefreshRequest, LogoutRequest
+  - **RESPONSE SCHEMAS**: TokenResponse with access_token and refresh_token
+  - **USER SCHEMAS**: UserRole enum, UserRead, UserCreate, UserUpdate
+- **DATABASE MIGRATION**: Alembic migration 20250819_01 for api_key table
+- **TYPE SAFETY**: All MyPy errors resolved, full type checking passes
+- **CI COMPLIANCE**: Ruff linting and local Pytest all passing
+- **MIGRATION FIXES**: Resolved duplicate migration files and dependency chain
+- **FULL CI SUCCESS**: All GitHub Actions tests now passing completely
+
+Commit message: "Implement API key management system following legacy patterns with complete auth schemas"
+
 ## 2025-08-16 (0.8.9) - OAuth Legacy Pattern Implementation + Critical Fixes
 - **OAUTH REFACTORED TO MATCH LEGACY ONYX**: Complete rewrite to follow battle-tested legacy pattern:
   - **BACKEND REDIRECTS**: Google now redirects directly to backend (not frontend)
