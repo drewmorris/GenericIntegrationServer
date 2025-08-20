@@ -1,328 +1,248 @@
-# Integration Server (CleverBrag Integration) – Updated Execution Plan
+# Generic Integration Server - Connector/Sync Focus Development Plan
 
-Last updated: 2025-08-16  
-**Status**: MVP READY - Core integration server complete, UI enhancements needed
+Last updated: 2025-08-19  
+**Status**: CORRECTED ANALYSIS - Focus on Connector/Sync Architecture Only
 
-## 🎉 MAJOR MILESTONE ACHIEVED
+## 🎯 CORRECTED STATE ASSESSMENT
 
-**✅ INTEGRATION SERVER CORE COMPLETE (90%)**
-- Multi-tenant authentication and authorization ✅
-- 83+ connector types operational (Gmail, Google Drive, etc.) ✅  
-- Destination routing (CleverBrag, Onyx, CSV) ✅
-- Encrypted credential management with audit trails ✅
-- Celery-based sync orchestration ✅
-- Full CI/CD pipeline with all tests passing ✅
+**✅ WHAT WE ACTUALLY HAVE (85-90%)**
+- ✅ **47 Production Connectors**: Full Onyx connector ecosystem in `connectors/onyx/`
+- ✅ **Connector Infrastructure**: All 6 base classes (BaseConnector, LoadConnector, PollConnector, etc.)
+- ✅ **Connector Factory**: `identify_connector_class` with full connector map
+- ✅ **Orchestration**: Celery tasks that run real connectors with checkpointing
+- ✅ **Credentials**: Encrypted credential storage with audit trails
+- ✅ **API Endpoints**: Connector definitions, profiles, credentials, sync runs
+- ✅ **Multi-tenant Auth**: JWT + API keys with organization isolation
+- ✅ **Basic Sync Tracking**: SyncRun model with status tracking
 
-**MVP STATUS**: System is production-ready via API for Gmail/Google Drive → CleverBrag syncing
+**❌ CRITICAL GAPS IDENTIFIED (Connector/Sync Only)**
 
-────────────────────────────────────
-PHASE 1: Management Web UI  (Weeks 9-11)
-────────────────────────────────────
-**Priority: HIGH** - Essential for user adoption
+### **1. Missing CC-Pair Architecture**
+- **Issue**: We use direct profile→credential relationship
+- **LegacyCode**: Uses `ConnectorCredentialPair` as core linking concept
+- **Impact**: Can't have many-to-many (one credential for multiple connectors)
 
-Goal: Build React-based management interface for the integration server
+### **2. Missing Sophisticated IndexAttempt Tracking**
+- **Issue**: Simple `SyncRun` with basic status
+- **LegacyCode**: Rich `IndexAttempt` with progress tracking, heartbeats, batch coordination
+- **Impact**: No progress monitoring, cancellation, or detailed error handling
 
-### Core Management Pages
-1. **Authentication UI**
-   - Login/signup forms
-   - Organization context switching
-   - User profile management
+### **3. Missing Status Management**
+- **Issue**: Simple string status fields
+- **LegacyCode**: `ConnectorCredentialPairStatus`, `IndexingStatus` enums with state machine
+- **Impact**: No proper connector lifecycle management
 
-2. **Connector Management Dashboard**
-   - List available connectors (83+ types)
-   - View connector definitions and schemas
-   - Connector documentation and setup guides
+### **4. Missing Advanced Sync Features**
+- **Issue**: Basic sync without advanced capabilities
+- **LegacyCode**: Permission sync, pruning, access control, batch coordination
+- **Impact**: Not enterprise-ready for complex deployments
 
-3. **Credential Configuration**
-   - OAuth flow UI for Google connectors
-   - Manual credential entry forms
-   - Credential testing and validation
-   - Secure credential display (masked secrets)
-
-4. **Profile Management**
-   - Create/edit connector profiles
-   - Select connector + credential + destination
-   - Profile status monitoring
-   - Schedule configuration
-
-5. **Sync Monitoring Interface**
-   - Real-time sync status dashboard
-   - Sync history and logs
-   - Error reporting and troubleshooting
-   - Performance metrics visualization
-
-### Technical Implementation
-- **Framework**: React 18 + TypeScript + Vite
-- **UI Library**: Material-UI v5 (per project requirements)
-- **State Management**: React Query + Zustand
-- **API Client**: Generated from OpenAPI spec
-- **Authentication**: JWT token management
-- **Routing**: React Router v6
-
-### Deliverables
-- [ ] Project setup with React + Material-UI
-- [ ] Authentication flows (login/signup/logout)
-- [ ] Connector catalog page with search/filter
-- [ ] OAuth flow UI for Google connectors
-- [ ] Profile creation wizard
-- [ ] Sync monitoring dashboard
-- [ ] Error handling and user feedback
-- [ ] Responsive design (mobile-friendly)
-
-Milestones
-□ Authentication UI functional
-□ Connector management operational
-□ OAuth flows working end-to-end
-□ Profile creation wizard complete
-□ Sync monitoring dashboard live
-□ CHANGELOG updated
+**REALITY CHECK**: We have 85-90% of functionality but need architectural improvements for production readiness.
 
 ────────────────────────────────────
-PHASE 2: Advanced Connector Features  (Weeks 12-13)
+PHASE 1: CORE ARCHITECTURE IMPROVEMENTS (2-3 weeks)
 ────────────────────────────────────
-**Priority: MEDIUM** - Enhance connector reliability
+**Priority: CRITICAL** - Fix architectural gaps for production readiness
 
-### OAuth Enhancements
-1. **PKCE Support**
-   - Implement PKCE for OAuth security
-   - Update OAuth start/callback endpoints
-   - Add code challenge/verifier handling
+### 1.1 Implement CC-Pair Architecture (1 week)
+**Goal**: Add proper Connector-Credential Pair model
 
-2. **Token Management**
-   - Automatic refresh token handling
-   - Token expiration monitoring
-   - Graceful token renewal flows
+**Deliverables**:
+- [ ] **ConnectorCredentialPair Model** - Many-to-many linking table
+- [ ] **Separate Connector Model** - Reusable connector configurations  
+- [ ] **Update Profile Model** - Link to CC-Pairs instead of direct credentials
+- [ ] **Migration Scripts** - Convert existing data to new structure
+- [ ] **API Updates** - Update endpoints for CC-Pair management
 
-3. **Connection Health Monitoring**
-   - Real-time connection status checking
-   - Automated credential validation
-   - Connection failure alerts and recovery
+**Success Criteria**:
+□ One credential can be used with multiple connectors
+□ One connector can use multiple credentials
+□ Existing data migrated without loss
+□ API endpoints work with new structure
 
-### Permission Synchronization
-1. **Connector Permission Sync**
-   - Implement permission sync logic for Google connectors
-   - Add permission validation and enforcement
-   - Create permission audit trails
+### 1.2 Enhanced IndexAttempt/SyncRun (1 week)
+**Goal**: Add sophisticated sync tracking
 
-### Deliverables
-- [ ] PKCE implementation for OAuth flows
-- [ ] Automatic token refresh mechanisms
-- [ ] Connection health monitoring system
-- [ ] Permission sync for Google connectors
-- [ ] Enhanced error handling and recovery
+**Deliverables**:
+- [ ] **Enhanced SyncRun Model** - Add progress tracking, heartbeats, batch coordination
+- [ ] **Status Enums** - Proper status state machine
+- [ ] **Progress Tracking** - Track batches completed, documents processed
+- [ ] **Cancellation Support** - Allow sync cancellation
+- [ ] **Error Handling** - Detailed error tracking and recovery
 
-Milestones
-□ PKCE OAuth flows operational
-□ Automatic token refresh working
-□ Connection monitoring active
-□ Permission sync functional
-□ CHANGELOG updated
+**Success Criteria**:
+□ Real-time progress tracking during sync
+□ Sync operations can be cancelled
+□ Detailed error information for debugging
+□ Proper status transitions
 
-────────────────────────────────────
-PHASE 3: Enhanced User Experience  (Weeks 14-15)
-────────────────────────────────────
-**Priority: MEDIUM** - Polish and usability improvements
+### 1.3 Advanced Sync Features (1 week)
+**Goal**: Add enterprise-grade sync capabilities
 
-### Advanced Management Features
-1. **Bulk Operations**
-   - Bulk user management
-   - Batch profile operations
-   - Mass sync triggering
+**Deliverables**:
+- [ ] **Permission Sync Options** - `auto_sync_options`, `last_time_perm_sync`
+- [ ] **Pruning Support** - `last_pruned`, `prune_freq` fields
+- [ ] **Access Control** - `access_type`, `admin_public` fields
+- [ ] **Refresh Frequency** - Proper scheduling with validation
+- [ ] **Document Counting** - Track total docs indexed
 
-2. **Role-Based Access Control**
-   - Admin/user/viewer roles
-   - Organization-level permissions
-   - Feature-based access control
-
-3. **Advanced Monitoring**
-   - Detailed performance metrics
-   - Resource usage tracking
-   - Custom alerting rules
-
-### UI/UX Enhancements
-1. **Dashboard Improvements**
-   - Customizable dashboard widgets
-   - Real-time status indicators
-   - Interactive data visualizations
-
-2. **Search and Filtering**
-   - Advanced search across all entities
-   - Smart filtering and sorting
-   - Saved search preferences
-
-### Deliverables
-- [ ] Role-based access control system
-- [ ] Bulk operation interfaces
-- [ ] Advanced monitoring dashboard
-- [ ] Enhanced search and filtering
-- [ ] Customizable user preferences
-
-Milestones
-□ RBAC system operational
-□ Bulk operations working
-□ Advanced monitoring live
-□ Enhanced UX deployed
-□ CHANGELOG updated
+**Success Criteria**:
+□ Permission sync configuration available
+□ Pruning schedules configurable
+□ Access control fields properly set
+□ Refresh frequency validation working
 
 ────────────────────────────────────
-PHASE 4: Production Hardening  (Weeks 16-17)
+PHASE 2: WEB UI IMPROVEMENTS (1-2 weeks)
 ────────────────────────────────────
-**Priority: LOW** - Production readiness improvements
+**Priority: HIGH** - Update UI for new architecture
 
-### Observability & Monitoring
-1. **Structured Logging**
-   - JSON-formatted logs
-   - Correlation IDs across requests
-   - Log aggregation and search
+### 2.1 CC-Pair Management UI (1 week)
+**Goal**: Update UI for Connector-Credential Pairs
 
-2. **Metrics & Alerting**
-   - Prometheus metrics collection
-   - Grafana dashboards
-   - Alertmanager integration
-   - Custom business metrics
+**Deliverables**:
+- [ ] **CC-Pair Creation Flow** - Link connectors to credentials
+- [ ] **CC-Pair Management** - List, edit, delete CC-Pairs
+- [ ] **Connector Reuse** - Show connector configurations that can be reused
+- [ ] **Credential Sharing** - Show which credentials are used by multiple connectors
+- [ ] **Status Dashboard** - Show CC-Pair status and health
 
-3. **Error Tracking**
-   - Sentry integration
-   - Error grouping and analysis
-   - Performance monitoring
+**Success Criteria**:
+□ Users can create CC-Pairs easily
+□ Clear visibility into connector/credential relationships
+□ Status dashboard shows system health
+□ Connector configurations can be reused
 
-### Deployment & Infrastructure
-1. **Container Orchestration**
-   - Docker Compose for development
-   - Kubernetes manifests for production
-   - Health checks and readiness probes
+### 2.2 Enhanced Sync Monitoring (1 week)
+**Goal**: Real-time sync progress and management
 
-2. **CI/CD Enhancements**
-   - Automated deployment pipelines
-   - Environment-specific configurations
-   - Blue-green deployment strategy
+**Deliverables**:
+- [ ] **Progress Bars** - Real-time sync progress visualization
+- [ ] **Sync Cancellation** - Cancel running syncs from UI
+- [ ] **Detailed Error Display** - Show detailed error information
+- [ ] **Sync History** - Enhanced sync history with filtering
+- [ ] **Batch Progress** - Show batch-level progress
 
-### Deliverables
-- [ ] Structured logging implementation
-- [ ] Prometheus/Grafana monitoring
-- [ ] Sentry error tracking
-- [ ] Production deployment configs
-- [ ] Automated deployment pipeline
-
-Milestones
-□ Monitoring stack operational
-□ Error tracking active
-□ Production deployment ready
-□ Documentation complete
-□ CHANGELOG updated
+**Success Criteria**:
+□ Real-time progress updates during sync
+□ Users can cancel long-running syncs
+□ Clear error messages help troubleshooting
+□ Sync history is searchable and filterable
 
 ────────────────────────────────────
-Current System Status (2025-08-16)
+PHASE 3: PRODUCTION POLISH (1-2 weeks)
 ────────────────────────────────────
+**Priority: MEDIUM** - Production readiness improvements
 
-### ✅ COMPLETED (Production Ready)
-**Core Infrastructure (100%)**
-- Multi-tenant database with RLS policies
-- JWT-based authentication system
-- Encrypted credential storage
-- Audit logging for all operations
-- CI/CD pipeline with full test coverage
+### 3.1 Enhanced Monitoring (1 week)
+**Goal**: Better observability and monitoring
 
-**Integration Framework (90%)**
-- 83 connector types from Onyx integration
-- Gmail and Google Drive connectors operational
-- CleverBrag, Onyx, CSV destinations working
-- Celery-based sync orchestration
-- OAuth start/callback endpoints (basic)
+**Deliverables**:
+- [ ] **Sync Metrics** - Prometheus metrics for sync operations
+- [ ] **Performance Monitoring** - Track sync performance over time
+- [ ] **Error Alerting** - Alert on sync failures and errors
+- [ ] **Health Checks** - Enhanced health checks for all components
+- [ ] **Logging Improvements** - Structured logging with correlation IDs
 
-**API Layer (90%)**
-- 34 REST endpoints across 11 modules
-- OpenAPI documentation (partial)
-- Multi-tenant request isolation
-- Error handling and validation
+**Success Criteria**:
+□ Comprehensive metrics available
+□ Performance trends visible
+□ Automated alerting on issues
+□ Structured logs for debugging
 
-### 🟡 IN PROGRESS
-**Web UI (10%)**
-- No React interface (API-only)
-- Missing management dashboard
-- No OAuth flow UI
+### 3.2 Documentation & Testing (1 week)
+**Goal**: Complete documentation and testing
 
-**Advanced Features (85%)**
-- Basic OAuth (missing PKCE)
-- Basic monitoring (missing advanced metrics)
-- Basic error handling (missing Sentry)
+**Deliverables**:
+- [ ] **API Documentation** - Update OpenAPI specs for new endpoints
+- [ ] **User Documentation** - Guide for CC-Pair management
+- [ ] **Integration Tests** - End-to-end tests for new architecture
+- [ ] **Performance Tests** - Load testing for sync operations
+- [ ] **Migration Guide** - Guide for upgrading existing deployments
 
-### 📈 SUCCESS METRICS
-- **API Functionality**: 100% operational
-- **Test Coverage**: >90% backend, all tests passing
-- **Integration Success**: Gmail/Google Drive → CleverBrag working
-- **Multi-tenancy**: Zero cross-tenant data leaks
-- **Security**: Encrypted credentials, audit trails
+**Success Criteria**:
+□ Complete API documentation
+□ User guides for new features
+□ Comprehensive test coverage
+□ Performance benchmarks established
 
 ────────────────────────────────────
-MVP Usage Instructions (API-Based)
+TIMELINE SUMMARY
 ────────────────────────────────────
 
-**Current MVP can sync Gmail/Google Drive → CleverBrag via API:**
+**Current State**: 85-90% complete with architectural gaps
+**Phase 1**: Core Architecture (Weeks 1-3) - 2-3 weeks
+**Phase 2**: UI Improvements (Weeks 4-5) - 1-2 weeks  
+**Phase 3**: Production Polish (Weeks 6-7) - 1-2 weeks
 
-1. **Setup Organization**: `POST /auth/signup`
-2. **Create Credentials**: `POST /credentials/` (manual OAuth token)
-3. **Create Profile**: `POST /profiles/` (Gmail/Google Drive + CleverBrag config)
-4. **Trigger Sync**: `POST /profiles/{id}/run`
-5. **Monitor Status**: `GET /profiles/{id}/runs`
+**Total Timeline**: 4-7 weeks to production-ready system
+**Core Architecture**: 2-3 weeks for architectural improvements
+**Full System**: 4-7 weeks for complete production readiness
 
-**Next Phase**: Build React UI to make this user-friendly
-
-────────────────────────────────────
-Architecture Decisions
-────────────────────────────────────
-
-**Technology Stack**
-- **Backend**: FastAPI + SQLAlchemy + PostgreSQL + Redis
-- **Frontend**: React 18 + TypeScript + Material-UI + Vite
-- **Task Queue**: Celery with Redis broker
-- **Authentication**: JWT with refresh tokens
-- **Security**: Fernet encryption, Row-Level Security
-- **Testing**: Pytest + React Testing Library
-- **CI/CD**: GitHub Actions with container services
-
-**Design Principles**
-- Multi-tenant from day one
-- API-first development
-- Security by design (encryption, audit trails)
-- Material Design UI standards
-- Test-driven development
-- Comprehensive error handling
+**Critical Path**: Phase 1 architectural improvements must be completed first.
 
 ────────────────────────────────────
-Conventions & Standards
+SUCCESS METRICS
 ────────────────────────────────────
 
-**Development Workflow**
-• **Every PR MUST**
-  – Pass all CI checks (tests, linting, type checking)
-  – Update unit tests for new functionality
-  – Add entry to CHANGELOG with conventional commit message
-  – Maintain >90% backend test coverage, >85% frontend coverage
+**Phase 1 Success**:
+- CC-Pair architecture enables flexible connector/credential relationships
+- Enhanced sync tracking provides real-time progress and cancellation
+- Advanced sync features support enterprise deployments
+- All existing functionality preserved during migration
 
-**Code Quality**
-• Backend: Ruff, MyPy, Pytest
-• Frontend: ESLint, Prettier, Vitest
-• API: OpenAPI spec compliance
-• Security: Secret scanning, dependency updates
+**Phase 2 Success**:
+- UI provides clear visibility into CC-Pair relationships
+- Real-time sync monitoring improves user experience
+- Sync management features reduce operational overhead
+- User experience is intuitive and efficient
 
-**Documentation**
-• API: OpenAPI auto-generated docs
-• Frontend: Component documentation
-• Deployment: Environment setup guides
-• User: Feature documentation with screenshots
+**Overall Success**:
+- Production-ready connector synchronization system
+- Enterprise-grade features (permission sync, access control)
+- Scalable architecture supporting multiple tenants
+- Comprehensive monitoring and observability
 
 ────────────────────────────────────
-Timeline Summary
+ARCHITECTURE DECISIONS
 ────────────────────────────────────
 
-**Current State**: Integration server core complete (Week 8)
-**Phase 1**: Management Web UI (Weeks 9-11) - 3 weeks
-**Phase 2**: Advanced connector features (Weeks 12-13) - 2 weeks  
-**Phase 3**: Enhanced UX (Weeks 14-15) - 2 weeks
-**Phase 4**: Production hardening (Weeks 16-17) - 2 weeks
+**Key Changes**:
+- Adopt CC-Pair architecture from LegacyCode for flexibility
+- Enhance sync tracking for production monitoring
+- Add enterprise features for business deployments
+- Maintain all existing connector functionality
 
-**Total Timeline**: 9 weeks to fully polished production system
-**MVP to Full UI**: 3 weeks (Phase 1 only)
+**Technology Stack** (Unchanged):
+- Backend: FastAPI + SQLAlchemy + PostgreSQL + Redis
+- Frontend: React 18 + TypeScript + Material-UI + Vite
+- Task Queue: Celery with Redis broker
+- Connectors: Existing Onyx connector ecosystem
 
-**Key Milestone**: End of Week 11 - Complete user-friendly integration server ready for production deployment
+**Design Principles**:
+- Preserve existing functionality during migration
+- Follow LegacyCode patterns for proven architecture
+- Maintain backward compatibility where possible
+- Focus on connector/sync functionality only
+
+────────────────────────────────────
+NEXT STEPS
+────────────────────────────────────
+
+**Immediate Actions**:
+1. Start with CC-Pair model implementation
+2. Create migration scripts for existing data
+3. Update API endpoints for new architecture
+4. Test migration with existing profiles/credentials
+
+**Development Workflow**:
+- Each change must preserve existing functionality
+- Migration scripts must be thoroughly tested
+- API changes must maintain backward compatibility
+- UI updates should be incremental and tested
+
+**Risk Mitigation**:
+- Comprehensive testing before each migration step
+- Backup existing data before structural changes
+- Gradual rollout of new features
+- Rollback plan for each major change

@@ -3,12 +3,37 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, ForeignKey, Integer, UniqueConstraint, Index
+from sqlalchemy import String, DateTime, ForeignKey, Integer, UniqueConstraint, Index, Enum, Boolean, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column, declared_attr
+from enum import Enum as PyEnum
 
 from backend.db.base import Base
 from backend.auth.schemas import UserRole
+
+
+# ---------------------------
+# Enums for Connector/Sync Status
+# ---------------------------
+
+class ConnectorCredentialPairStatus(str, PyEnum):
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    DELETING = "DELETING"
+
+
+class IndexingStatus(str, PyEnum):
+    NOT_STARTED = "NOT_STARTED"
+    IN_PROGRESS = "IN_PROGRESS"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    CANCELED = "CANCELED"
+
+
+class AccessType(str, PyEnum):
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
+    SYNC = "SYNC"
 
 
 # ---------------------------
@@ -101,6 +126,76 @@ class UserToken(Base):
 
 
 # --------------------------------------------------
+# Connector models (CC-Pair Architecture)
+# --------------------------------------------------
+
+class Connector(Base):
+    """Reusable connector configuration that can be linked to multiple credentials"""
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)  # DocumentSource value
+    input_type: Mapped[str] = mapped_column(String, nullable=False)  # InputType value
+    connector_specific_config: Mapped[dict] = mapped_column(JSONB, default=dict)
+    
+    # Scheduling configuration
+    refresh_freq: Mapped[int | None] = mapped_column(Integer, nullable=True)  # seconds
+    prune_freq: Mapped[int | None] = mapped_column(Integer, nullable=True)  # seconds
+    
+    # Timestamps
+    time_created: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    time_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    connector_credential_pairs: Mapped[list["ConnectorCredentialPair"]] = relationship(
+        "ConnectorCredentialPair", back_populates="connector", cascade="all, delete-orphan"
+    )
+
+
+class ConnectorCredentialPair(Base):
+    """Links connectors to credentials with sync status and configuration"""
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    
+    # Foreign keys
+    connector_id: Mapped[int] = mapped_column(ForeignKey("connector.id"), nullable=False)
+    credential_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("credential.id"), nullable=False)
+    
+    # Multi-tenant fields
+    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    creator_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
+    
+    # Status and configuration
+    status: Mapped[ConnectorCredentialPairStatus] = mapped_column(
+        Enum(ConnectorCredentialPairStatus, native_enum=False), default=ConnectorCredentialPairStatus.ACTIVE
+    )
+    access_type: Mapped[AccessType] = mapped_column(
+        Enum(AccessType, native_enum=False), default=AccessType.PRIVATE
+    )
+    
+    # Advanced sync options
+    auto_sync_options: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    last_time_perm_sync: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_successful_index_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_pruned: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    total_docs_indexed: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Error tracking
+    in_repeated_error_state: Mapped[bool] = mapped_column(Boolean, default=False)
+    deletion_failure_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    
+    # Timestamps
+    time_created: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    time_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    connector: Mapped["Connector"] = relationship("Connector", back_populates="connector_credential_pairs")
+    credential: Mapped["Credential"] = relationship("Credential")
+    organization: Mapped["Organization"] = relationship("Organization")
+    creator: Mapped["User"] = relationship("User")
+    index_attempts: Mapped[list["IndexAttempt"]] = relationship("IndexAttempt", back_populates="connector_credential_pair")
+
+
+# --------------------------------------------------
 # Connector profiles & sync runs (Phase-1 remainder)
 # --------------------------------------------------
 
@@ -141,6 +236,62 @@ class SyncRun(Base):
     records_synced: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     profile: Mapped["ConnectorProfile"] = relationship()
+
+
+class IndexAttempt(Base):
+    """Enhanced sync tracking with progress monitoring and batch coordination"""
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    
+    # Link to CC-Pair
+    connector_credential_pair_id: Mapped[int] = mapped_column(
+        ForeignKey("connectorcredentialpair.id"), nullable=False
+    )
+    
+    # Status and progress
+    status: Mapped[IndexingStatus] = mapped_column(
+        Enum(IndexingStatus, native_enum=False), default=IndexingStatus.NOT_STARTED
+    )
+    from_beginning: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # Document counts
+    new_docs_indexed: Mapped[int] = mapped_column(Integer, default=0)
+    total_docs_indexed: Mapped[int] = mapped_column(Integer, default=0)
+    docs_removed_from_index: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Error tracking
+    error_msg: Mapped[str | None] = mapped_column(Text, nullable=True)
+    full_exception_trace: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
+    # Batch coordination
+    total_batches: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completed_batches: Mapped[int] = mapped_column(Integer, default=0)
+    total_chunks: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Progress tracking for stall detection
+    last_progress_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_batches_completed_count: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Heartbeat tracking for worker liveness
+    heartbeat_counter: Mapped[int] = mapped_column(Integer, default=0)
+    last_heartbeat_value: Mapped[int] = mapped_column(Integer, default=0)
+    last_heartbeat_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    
+    # Celery task coordination
+    celery_task_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    cancellation_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # Checkpoint tracking
+    checkpoint_pointer: Mapped[str | None] = mapped_column(String, nullable=True)
+    
+    # Timestamps
+    time_created: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    time_started: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    time_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    connector_credential_pair: Mapped["ConnectorCredentialPair"] = relationship(
+        "ConnectorCredentialPair", back_populates="index_attempts"
+    )
 
 
 # ---------------------------
