@@ -17,6 +17,8 @@ from backend.routes import api_keys as api_keys_router
 from backend.routes import cc_pairs as cc_pairs_router
 from backend.routes import migration as migration_router
 from backend.routes import health as health_router
+from backend.routes import metrics as metrics_router
+from backend.routes import alerts as alerts_router
 from backend.logging import configure_logging
 from backend.db.startup import initialize_database
 
@@ -68,6 +70,8 @@ app.include_router(api_keys_router.router)
 app.include_router(cc_pairs_router.router)
 app.include_router(migration_router.router)
 app.include_router(health_router.router)
+app.include_router(metrics_router.router)
+app.include_router(alerts_router.router)
 
 
 @app.get("/health", tags=["Health"])

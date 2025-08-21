@@ -17,6 +17,7 @@ from backend.db.session import AsyncSessionLocal
 from backend.db.rls import set_current_org
 from backend.db import models as m
 from backend.db import cc_pairs as cc_pair_ops
+from backend.monitoring import cc_pair_metrics, destination_metrics
 
 logger = get_task_logger(__name__)
 
@@ -48,6 +49,7 @@ async def _sync_cc_pair_impl(
 ) -> str:
     """Implementation of CC-Pair sync with IndexAttempt tracking"""
     
+    sync_id = None
     async with AsyncSessionLocal() as session:
         try:
             await set_current_org(session, uuid.UUID(org_id))
@@ -65,6 +67,26 @@ async def _sync_cc_pair_impl(
             if cc_pair.status != m.ConnectorCredentialPairStatus.ACTIVE:
                 logger.warning("CC-Pair %s is not active, skipping sync", cc_pair_id)
                 return f"CC-Pair {cc_pair_id} is not active"
+            
+            # Get destination info for metrics
+            destination_name = "unknown"
+            if cc_pair.destination_target_id:
+                dest_result = await session.execute(
+                    select(m.DestinationTarget).where(
+                        m.DestinationTarget.id == cc_pair.destination_target_id
+                    )
+                )
+                dest_target = dest_result.scalar_one_or_none()
+                if dest_target:
+                    destination_name = dest_target.name
+            
+            # Start metrics tracking
+            sync_id = cc_pair_metrics.start_sync(
+                str(cc_pair_id),
+                cc_pair.connector.source,
+                destination_name,
+                org_id
+            )
             
             # Create IndexAttempt
             index_attempt = m.IndexAttempt(
@@ -103,6 +125,18 @@ async def _sync_cc_pair_impl(
             
             await session.commit()
             
+            # Record successful sync metrics
+            if sync_id:
+                cc_pair_metrics.end_sync(
+                    sync_id,
+                    str(cc_pair_id),
+                    cc_pair.connector.source,
+                    destination_name,
+                    org_id,
+                    success=True,
+                    documents_processed=docs_synced
+                )
+            
             logger.info("Successfully synced CC-Pair %s: %d documents", cc_pair_id, docs_synced)
             return f"Successfully synced {docs_synced} documents for CC-Pair {cc_pair_id}"
             
@@ -120,6 +154,18 @@ async def _sync_cc_pair_impl(
                 cc_pair.in_repeated_error_state = True
                 
                 await session.commit()
+            
+            # Record failed sync metrics
+            if sync_id and 'cc_pair' in locals() and cc_pair:
+                cc_pair_metrics.end_sync(
+                    sync_id,
+                    str(cc_pair_id),
+                    cc_pair.connector.source,
+                    destination_name,
+                    org_id,
+                    success=False,
+                    documents_processed=0
+                )
             
             raise
 
@@ -292,11 +338,19 @@ async def _send_to_destinations(
         if destination_class:
             destination = destination_class()
             
+            # Enhance config with context for metrics
+            enhanced_config = {
+                **target.config,
+                "organization_id": str(cc_pair.organization_id),
+                "cc_pair_id": str(cc_pair.id),
+                "target_id": str(target.id)
+            }
+            
             # Use enhanced batch processing for better performance and reliability
             if hasattr(destination, 'send_batch') and len(docs) > 1:
-                await destination.send_batch(documents=docs, profile_config=target.config)
+                await destination.send_batch(documents=docs, profile_config=enhanced_config)
             else:
-                await destination.send(payload=docs, profile_config=target.config)
+                await destination.send(payload=docs, profile_config=enhanced_config)
                 
             logger.info("Sent %d documents from CC-Pair %s to destination %s", len(docs), cc_pair.id, target.name)
     except Exception as e:

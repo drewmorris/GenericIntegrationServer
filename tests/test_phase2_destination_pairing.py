@@ -90,12 +90,22 @@ class TestDestinationPairing:
                 mock_destination.send_batch.assert_called_once()
                 call_args = mock_destination.send_batch.call_args
                 assert call_args.kwargs['documents'] == docs
-                assert call_args.kwargs['profile_config'] == mock_target.config
+                # Check that enhanced config contains original config plus metrics context
+                enhanced_config = call_args.kwargs['profile_config']
+                assert enhanced_config['cleverbrag']['api_key'] == 'test-key'
+                assert enhanced_config['organization_id'] == str(cc_pair.organization_id)
+                assert enhanced_config['cc_pair_id'] == str(cc_pair.id)
+                assert enhanced_config['target_id'] == str(mock_target.id)
             else:
                 mock_destination.send.assert_called_once()
                 call_args = mock_destination.send.call_args
                 assert call_args.kwargs['payload'] == docs
-                assert call_args.kwargs['profile_config'] == mock_target.config
+                # Check that enhanced config contains original config plus metrics context
+                enhanced_config = call_args.kwargs['profile_config']
+                assert enhanced_config['cleverbrag']['api_key'] == 'test-key'
+                assert enhanced_config['organization_id'] == str(cc_pair.organization_id)
+                assert enhanced_config['cc_pair_id'] == str(cc_pair.id)
+                assert enhanced_config['target_id'] == str(mock_target.id)
     
     @pytest.mark.asyncio
     async def test_cc_pair_without_destination(self):

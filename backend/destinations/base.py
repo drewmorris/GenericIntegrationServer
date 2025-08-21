@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Iterable, Dict, List
 from datetime import datetime, timedelta
 
+from backend.monitoring import destination_metrics, DestinationStatus
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,16 +31,33 @@ class DestinationBase(ABC):
         if not documents:
             return
 
+        # Extract organization info for metrics (if available)
+        org_id = profile_config.get("organization_id", "unknown")
+        cc_pair_id = profile_config.get("cc_pair_id", "unknown")
+
         # Process in batches like Onyx does
         for i in range(0, len(documents), batch_size):
             batch = documents[i:i + batch_size]
-            start_time = time.time()
+            
+            # Start metrics timer
+            request_id = destination_metrics.start_request_timer(
+                self.name, org_id, "send_batch"
+            )
             
             try:
                 await self.send(payload=batch, profile_config=profile_config)
                 
+                # End metrics timer and record success
+                duration = destination_metrics.end_request_timer(
+                    request_id, self.name, org_id, "send_batch"
+                )
+                
+                # Record batch metrics
+                destination_metrics.record_batch_sent(
+                    self.name, org_id, cc_pair_id, len(batch), success=True
+                )
+                
                 # Log performance metrics (like Onyx monitoring)
-                duration = time.time() - start_time
                 logger.info(
                     "Batch sent successfully: destination=%s, batch_size=%d, duration=%.2fs",
                     self.name, len(batch), duration
@@ -50,6 +69,20 @@ class DestinationBase(ABC):
             except Exception as e:
                 self._error_count += 1
                 self._last_error_time = datetime.utcnow()
+                
+                # Record error metrics
+                destination_metrics.record_error(
+                    self.name, org_id, type(e).__name__, cc_pair_id
+                )
+                destination_metrics.record_batch_sent(
+                    self.name, org_id, cc_pair_id, len(batch), success=False
+                )
+                
+                # End timer (even on failure)
+                destination_metrics.end_request_timer(
+                    request_id, self.name, org_id, "send_batch"
+                )
+                
                 logger.error(
                     "Batch send failed: destination=%s, batch_size=%d, error_count=%d, error=%s",
                     self.name, len(batch), self._error_count, str(e)
@@ -58,15 +91,33 @@ class DestinationBase(ABC):
 
     async def health_check(self, profile_config: dict[str, Any]) -> bool:
         """Check destination health (can be overridden by specific destinations)"""
+        org_id = profile_config.get("organization_id", "unknown")
+        target_id = profile_config.get("target_id", "unknown")
+        
         try:
             # Basic health check - try to send empty payload
             await self.send(payload=[], profile_config=profile_config)
             self._health_status = True
             self._last_health_check = datetime.utcnow()
+            
+            # Update health metrics
+            destination_metrics.update_health_status(
+                self.name, org_id, target_id, DestinationStatus.HEALTHY
+            )
+            
             return True
         except Exception as e:
             self._health_status = False
             self._last_health_check = datetime.utcnow()
+            
+            # Update health metrics and record error
+            destination_metrics.update_health_status(
+                self.name, org_id, target_id, DestinationStatus.DOWN
+            )
+            destination_metrics.record_error(
+                self.name, org_id, "health_check_failed"
+            )
+            
             logger.warning("Health check failed for destination %s: %s", self.name, str(e))
             return False
 

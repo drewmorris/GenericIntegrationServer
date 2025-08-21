@@ -1,3 +1,37 @@
+## 2025-01-21 (1.4.0) - Advanced Monitoring, Metrics, and Alerting System
+
+### Major Features
+- **Comprehensive Prometheus Metrics**: Implemented destination-specific and CC-Pair metrics following Onyx's monitoring patterns with 15+ metric types including document delivery rates, health status, response times, sync durations, and error tracking
+- **Intelligent Alerting System**: Built production-grade alerting with 7 alert types, configurable rules, cooldown periods, alert resolution, and multiple notification channels
+- **Grafana Dashboards**: Created 2 comprehensive dashboards for destination overview and CC-Pair sync monitoring with real-time visualizations, health status indicators, and performance analytics
+- **Metrics Collection Service**: Implemented background metrics aggregation service that evaluates database health and triggers intelligent alerts based on configurable thresholds
+- **Alert Management API**: Added REST endpoints for viewing active alerts, alert history, acknowledgments, and system health monitoring
+
+### Technical Implementation
+- **Metrics Framework**: Extended Onyx's Prometheus integration with destination-aware metrics including counters, histograms, and gauges for comprehensive observability
+- **Alert Manager**: Implemented sophisticated alert management with rule-based evaluation, deduplication, cooldown periods, and automatic resolution detection
+- **Monitoring Integration**: Seamlessly integrated metrics collection into existing destination base classes and CC-Pair orchestration tasks
+- **API Endpoints**: Added 6 new alert management endpoints (`/alerts/active`, `/alerts/history`, `/alerts/summary`, `/alerts/acknowledge`, etc.)
+- **Background Services**: Created metrics collector service for continuous health evaluation and proactive alerting
+
+### Monitoring Stack
+- **Prometheus Configuration**: Complete Prometheus setup with scraping rules, retention policies, and integration targets
+- **Grafana Provisioning**: Automated dashboard and data source provisioning with organization-based filtering
+- **Alertmanager Integration**: Full Alertmanager configuration with email notifications, webhook integration, and alert routing
+- **Docker Compose Stack**: Complete monitoring infrastructure with Prometheus, Grafana, Alertmanager, and Node Exporter
+
+### Alert Rules & Thresholds
+- **Destination Alerts**: Down (5min), Degraded (10min), High Error Rate (>10%), Slow Response (>30s)
+- **CC-Pair Alerts**: Sync Failed (3+ failures/hour), Sync Slow (>1 hour), No Recent Sync (24+ hours), Too Many Active Syncs (>10)
+- **System Alerts**: Server Down (1min), High Memory (>90%), High CPU (>80%), Low Disk Space (<10%)
+
+### Testing & Quality
+- **Comprehensive Test Suite**: Added 46 new unit tests covering metrics collection, alert evaluation, API endpoints, and system integration
+- **Production Patterns**: Followed Onyx's proven monitoring architecture with singleton collectors, background tasks, and structured logging
+- **Error Handling**: Robust error handling in metrics collection with graceful degradation and recovery mechanisms
+
+This release transforms the Integration Server into a fully observable, production-ready system with enterprise-grade monitoring, alerting, and operational visibility capabilities.
+
 ## 2025-01-21 (1.3.0) - Enhanced Destination Connectors with 1:1 Source-Destination Pairing
 
 - **1:1 SOURCE-DESTINATION ARCHITECTURE**: Implemented clean pairing model for multi-profile support:
