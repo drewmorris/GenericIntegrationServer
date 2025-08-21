@@ -135,6 +135,7 @@ async def migrate_connector_profiles_to_cc_pairs(
                         name=cc_pair_name,
                         connector_id=connector.id,
                         credential_id=profile.credential_id,
+                        destination_target_id=None,  # Migration: no destination initially
                         organization_id=profile.organization_id,
                         creator_id=profile.user_id,
                         status=m.ConnectorCredentialPairStatus.ACTIVE if profile.status == "active" else m.ConnectorCredentialPairStatus.PAUSED,

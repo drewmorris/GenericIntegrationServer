@@ -1,3 +1,35 @@
+## 2025-01-21 (1.3.0) - Enhanced Destination Connectors with 1:1 Source-Destination Pairing
+
+- **1:1 SOURCE-DESTINATION ARCHITECTURE**: Implemented clean pairing model for multi-profile support:
+  - **CC-PAIR DESTINATION LINKING**: Added `destination_target_id` to ConnectorCredentialPair model for direct 1:1 pairing
+  - **PROFILE ISOLATION**: Each profile (Gmail→CleverBrag, Gmail→Onyx) has separate sync tracking and configuration
+  - **MIGRATION SUPPORT**: Idempotent migration to add destination references with proper foreign key constraints
+  - **INDEX OPTIMIZATION**: Added `idx_cc_pair_destination_target_id` for efficient destination lookups
+
+- **ENHANCED DESTINATION BASE CLASS**: Production-grade destination architecture adapted from Onyx patterns:
+  - **BATCH PROCESSING**: Intelligent batching with configurable batch sizes and performance monitoring
+  - **HEALTH MONITORING**: Built-in health checks with error tracking and status reporting
+  - **RETRY LOGIC**: Enhanced exponential backoff with jitter (5 attempts, 2x backoff like Onyx @retry)
+  - **ERROR TRACKING**: Automatic error counting and last error time tracking per destination
+
+- **CLEVERBRAG ENHANCEMENTS**: Production-ready CleverBrag destination with advanced features:
+  - **HEALTH CHECKS**: Dedicated `/v3/health` endpoint validation with API key verification
+  - **BATCH OPTIMIZATION**: Smaller batch sizes (10 docs) optimized for API rate limits
+  - **TEST MODE SUPPORT**: Enhanced test mode detection for development and CI environments
+  - **CONNECTION REUSE**: HTTP client optimization for better performance
+
+- **DESTINATION API ROUTES**: Comprehensive destination management and monitoring:
+  - **HEALTH ENDPOINTS**: `/destinations/{name}/health` for real-time destination health checks
+  - **CONFIG TESTING**: `/destinations/{name}/test` for validating destination configurations
+  - **ORGANIZATION SCOPING**: Health checks use organization-specific destination configurations
+  - **ERROR HANDLING**: Graceful error handling with detailed error reporting
+
+- **CC-PAIR TASK ENHANCEMENTS**: Improved orchestration for 1:1 destination routing:
+  - **DIRECT ROUTING**: CC-Pairs route to their specific destination (no more organization-wide broadcasting)
+  - **BATCH PREFERENCE**: Automatic detection and use of `send_batch` when available for better performance
+  - **ERROR ISOLATION**: Destination failures isolated to specific CC-Pairs, not affecting others
+  - **PERFORMANCE LOGGING**: Detailed logging of batch sizes, durations, and success rates
+
 ## 2025-01-21 (1.2.0) - Database Performance Optimization
 
 - **DATABASE INDEXING**: Added comprehensive performance indexes for CC-Pair architecture:

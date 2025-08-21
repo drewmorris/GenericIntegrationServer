@@ -48,6 +48,7 @@ class ConnectorCredentialPairBase(BaseModel):
     name: str = Field(..., description="Human-readable CC-Pair name")
     connector_id: int = Field(..., description="ID of the connector")
     credential_id: uuid.UUID = Field(..., description="ID of the credential")
+    destination_target_id: Optional[uuid.UUID] = Field(None, description="ID of the destination target")
     organization_id: uuid.UUID = Field(..., description="Organization ID")
     creator_id: Optional[uuid.UUID] = Field(None, description="User who created this CC-Pair")
     status: ConnectorCredentialPairStatus = Field(default=ConnectorCredentialPairStatus.ACTIVE)

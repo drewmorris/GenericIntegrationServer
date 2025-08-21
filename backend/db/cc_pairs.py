@@ -116,6 +116,7 @@ async def create_cc_pair(
         name=cc_pair_data.name,
         connector_id=cc_pair_data.connector_id,
         credential_id=cc_pair_data.credential_id,
+        destination_target_id=cc_pair_data.destination_target_id,
         organization_id=cc_pair_data.organization_id,
         creator_id=cc_pair_data.creator_id,
         status=cc_pair_data.status,

@@ -159,6 +159,9 @@ class ConnectorCredentialPair(Base):
     # Foreign keys
     connector_id: Mapped[int] = mapped_column(ForeignKey("connector.id"), nullable=False)
     credential_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("credential.id"), nullable=False)
+    destination_target_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("destinationtarget.id"), nullable=True
+    )
     
     # Multi-tenant fields
     organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
@@ -190,6 +193,7 @@ class ConnectorCredentialPair(Base):
     # Relationships
     connector: Mapped["Connector"] = relationship("Connector", back_populates="connector_credential_pairs")
     credential: Mapped["Credential"] = relationship("Credential")
+    destination_target: Mapped["DestinationTarget"] = relationship("DestinationTarget")
     organization: Mapped["Organization"] = relationship("Organization")
     creator: Mapped["User"] = relationship("User")
     index_attempts: Mapped[list["IndexAttempt"]] = relationship("IndexAttempt", back_populates="connector_credential_pair")

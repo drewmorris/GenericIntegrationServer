@@ -265,32 +265,43 @@ async def _send_to_destinations(
     cc_pair: m.ConnectorCredentialPair,
     docs: list[dict]
 ) -> None:
-    """Send documents to configured destinations"""
+    """Send documents to the CC-Pair's configured destination"""
     
-    # Get destination targets for the organization
+    # Check if CC-Pair has a destination configured
+    if not cc_pair.destination_target_id:
+        logger.warning("No destination target configured for CC-Pair %s", cc_pair.id)
+        return
+    
+    # Get the specific destination target for this CC-Pair
     result = await session.execute(
         select(m.DestinationTarget).where(
-            m.DestinationTarget.organization_id == cc_pair.organization_id
+            m.DestinationTarget.id == cc_pair.destination_target_id
         )
     )
-    targets = result.scalars().all()
+    target = result.scalar_one_or_none()
     
-    if not targets:
-        logger.warning("No destination targets configured for organization %s", cc_pair.organization_id)
+    if not target:
+        logger.error("Destination target %s not found for CC-Pair %s", cc_pair.destination_target_id, cc_pair.id)
         return
     
     # Use existing destination logic
     from backend.destinations import get_destination
     
-    for target in targets:
-        try:
-            destination_class = get_destination(target.name)
-            if destination_class:
-                destination = destination_class()
+    try:
+        destination_class = get_destination(target.name)
+        if destination_class:
+            destination = destination_class()
+            
+            # Use enhanced batch processing for better performance and reliability
+            if hasattr(destination, 'send_batch') and len(docs) > 1:
+                await destination.send_batch(documents=docs, profile_config=target.config)
+            else:
                 await destination.send(payload=docs, profile_config=target.config)
-                logger.info("Sent %d documents to destination %s", len(docs), target.name)
-        except Exception as e:
-            logger.error("Failed to send to destination %s: %s", target.name, str(e))
+                
+            logger.info("Sent %d documents from CC-Pair %s to destination %s", len(docs), cc_pair.id, target.name)
+    except Exception as e:
+        logger.error("Failed to send from CC-Pair %s to destination %s: %s", cc_pair.id, target.name, str(e))
+        raise
 
 
 async def _update_heartbeat(session: AsyncSession, attempt_id: int) -> None:
