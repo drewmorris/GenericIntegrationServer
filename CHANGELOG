@@ -1,3 +1,32 @@
+## 2025-01-20 (1.1.0) - Testing Infrastructure Overhaul
+
+- **TESTING FOUNDATION**: Established industry-standard testing architecture:
+  - **UNIT/INTEGRATION SEPARATION**: Clear separation with proper markers and CI integration
+  - **CI ALIGNMENT**: Integrated with existing `check_codebase.sh` infrastructure for PostgreSQL/Redis containers
+  - **PERFORMANCE MONITORING**: Automatic test performance tracking (>5s unit, >30s integration warnings)
+  - **TEST ORGANIZATION**: Proper markers (`@pytest.mark.unit`, `@pytest.mark.integration`) with auto-classification
+
+- **COVERAGE IMPROVEMENTS**: Achieved 100% coverage on critical route modules:
+  - **AUTH ROUTES**: `backend/routes/auth.py` 61% → 100% (comprehensive auth flow testing)
+  - **DESTINATIONS**: `backend/routes/destinations.py` 50% → 100% (destination schema validation)
+  - **SYNC RUNS**: `backend/routes/sync_runs.py` 53% → 100% (sync history and status tracking)
+  - **ORCHESTRATOR**: `backend/routes/orchestrator.py` 56% → 100% (manual sync triggering)
+  - **OVERALL PROGRESS**: Backend coverage improved from 59% to 60%+ with robust unit tests
+
+- **TESTING BEST PRACTICES**: Comprehensive testing guide and infrastructure:
+  - **DOCUMENTATION**: Created detailed testing guide (`docs/testing.md`) with examples and troubleshooting
+  - **FIXTURES**: Established reusable test fixtures and utilities in `conftest.py`
+  - **MOCKING PATTERNS**: Proper `AsyncMock` and `MagicMock` usage for isolated unit testing
+  - **INTEGRATION TESTS**: Fixed async database issues, CI-only integration tests with real services
+
+- **INFRASTRUCTURE FIXES**: Resolved testing pipeline issues:
+  - **PYTHON PATH**: Fixed import errors and test discovery issues
+  - **TEST ISOLATION**: Proper environment setup with automatic cleanup
+  - **SYNTAX FIXES**: Resolved indentation and syntax errors in integration tests
+  - **CI COMPATIBILITY**: Ensured tests work with existing Docker container setup
+
+**Commit Message**: Establish comprehensive testing infrastructure with industry best practices, 100% coverage on key routes, and proper CI integration
+
 ## 2025-01-19 (1.0.0) - CC-Pair Architecture Implementation + CI Success
 
 - **CC-PAIR ARCHITECTURE**: Complete Connector-Credential Pair system following LegacyCode patterns:

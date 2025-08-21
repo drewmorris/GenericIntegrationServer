@@ -16,6 +16,7 @@ from backend.routes import security as security_router
 from backend.routes import api_keys as api_keys_router
 from backend.routes import cc_pairs as cc_pairs_router
 from backend.routes import migration as migration_router
+from backend.routes import health as health_router
 from backend.logging import configure_logging
 from backend.db.startup import initialize_database
 
@@ -66,9 +67,10 @@ app.include_router(security_router.router)
 app.include_router(api_keys_router.router)
 app.include_router(cc_pairs_router.router)
 app.include_router(migration_router.router)
+app.include_router(health_router.router)
 
 
 @app.get("/health", tags=["Health"])
-async def health() -> dict[str, str]:
-    """Simple health check used by load-balancers and uptime monitors."""
+async def simple_health() -> dict[str, str]:
+    """Simple health check used by load-balancers and uptime monitors (no database dependency)."""
     return {"status": "ok"} 
