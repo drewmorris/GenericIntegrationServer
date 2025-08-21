@@ -1,3 +1,23 @@
+## 2025-01-21 (1.2.0) - Database Performance Optimization
+
+- **DATABASE INDEXING**: Added comprehensive performance indexes for CC-Pair architecture:
+  - **CONNECTOR INDEXES**: `idx_connector_source`, `idx_connector_time_created` for source filtering and time-based queries
+  - **CC-PAIR INDEXES**: `idx_cc_pair_connector_id`, `idx_cc_pair_organization_id`, `idx_cc_pair_status`, `idx_cc_pair_time_created` for multi-tenant and status filtering
+  - **COMPOSITE INDEXES**: `idx_cc_pair_status_org_time` for scheduler queries (active pairs by organization and sync time)
+  - **INDEX ATTEMPT INDEXES**: `idx_index_attempt_cc_pair_id`, `idx_index_attempt_status`, `idx_index_attempt_celery_task_id` for sync tracking
+  - **OPTIMIZATION QUERIES**: Created `backend/db/query_optimization.py` with index-aware query patterns
+
+- **MIGRATION INFRASTRUCTURE**: Enhanced Alembic migration system:
+  - **IDEMPOTENT MIGRATIONS**: All indexes use `if_not_exists=True` and `if_exists=True` for safe deployment
+  - **PERFORMANCE TESTING**: Added comprehensive test suite for index validation and query optimization
+  - **MIGRATION VALIDATION**: Automated tests ensure all required indexes are present and properly configured
+
+- **QUERY PERFORMANCE**: Optimized database operations for production scale:
+  - **SCHEDULER QUERIES**: Efficient CC-Pair due-for-sync detection with composite indexes
+  - **STATUS FILTERING**: Fast active/inactive CC-Pair and IndexAttempt queries
+  - **MULTI-TENANT SUPPORT**: Organization-scoped queries with proper index utilization
+  - **CELERY COORDINATION**: Optimized task tracking and coordination queries
+
 ## 2025-01-20 (1.1.0) - Testing Infrastructure Overhaul
 
 - **TESTING FOUNDATION**: Established industry-standard testing architecture:

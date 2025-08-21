@@ -66,3 +66,4 @@ if __name__ == "__main__":
         result = run_all_tests()
     
     sys.exit(result.returncode)
+

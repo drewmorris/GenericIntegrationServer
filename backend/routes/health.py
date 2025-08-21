@@ -151,3 +151,4 @@ async def liveness_probe() -> Dict[str, str]:
     This is a lightweight check that doesn't depend on external services.
     """
     return {"status": "alive", "message": "Service is alive"}
+
