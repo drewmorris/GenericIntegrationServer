@@ -467,3 +467,5 @@ class TestAlertEnums:
         assert AlertType.HIGH_ERROR_RATE == "high_error_rate"
         assert AlertType.RATE_LIMIT_EXCEEDED == "rate_limit_exceeded"
         assert AlertType.HEALTH_CHECK_FAILED == "health_check_failed"
+
+

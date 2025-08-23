@@ -64,3 +64,5 @@ async def metrics_health() -> dict:
         "metrics_available": True,
         "endpoint": "/metrics/prometheus"
     }
+
+

@@ -365,3 +365,5 @@ class CCPairMetricsCollector:
 # Global metric collectors (singleton pattern like Onyx)
 destination_metrics = DestinationMetricsCollector()
 cc_pair_metrics = CCPairMetricsCollector()
+
+

@@ -225,3 +225,5 @@ async def get_alert_system_health() -> dict:
         "alert_handlers": handler_count,
         "last_evaluation": "continuous"  # Since we run continuous monitoring
     }
+
+

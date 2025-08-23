@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
-  Container,
-  Typography,
-  Paper,
-  Stack,
-  Select,
-  MenuItem,
-  Button,
   Alert,
-  TextField,
+  Button,
+  Container,
   Divider,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
 import { useConnectorDefinitions } from '../hooks/useConnectors';
 import { useCredentials } from '../hooks/useCredentials';
 import { api } from '../lib/api';
@@ -26,7 +26,9 @@ function randState(): string {
       c.getRandomValues(arr);
       return [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
     }
-  } catch { }
+  } catch {
+    // Crypto API not available, fall back to Math.random
+  }
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
 

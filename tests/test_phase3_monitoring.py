@@ -455,3 +455,5 @@ class TestMetricsEnumTypes:
         assert CCPairStatus.PAUSED == "paused"
         assert CCPairStatus.ERROR == "error"
         assert CCPairStatus.SYNCING == "syncing"
+
+

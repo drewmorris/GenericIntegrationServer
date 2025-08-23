@@ -1,5 +1,6 @@
 import { SnackbarProvider, useSnackbar, type VariantType } from 'notistack';
-import React, { createContext, useContext } from 'react';
+import type React from 'react';
+import { createContext, useContext } from 'react';
 
 type SnackContextValue = {
   enqueue: (msg: string, options?: { variant?: VariantType }) => void;

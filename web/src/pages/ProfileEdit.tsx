@@ -1,6 +1,6 @@
-import { Container, TextField, Button, CircularProgress, Typography } from '@mui/material';
+import { Button, CircularProgress, Container, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { useSnack } from '../components/Snackbar';
 import { useProfiles } from '../hooks/useProfiles';

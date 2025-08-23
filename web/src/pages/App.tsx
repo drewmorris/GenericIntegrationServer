@@ -1,19 +1,18 @@
 // @ts-nocheck
 import { Typography } from '@mui/material';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import TopNav from '../components/TopNav';
 import { useAuth } from '../context/AuthContext';
 import { useDashboardStats } from '../hooks/useDashboardStats';
-
+import ConnectorsPage from './Connectors';
+import DestinationsPage from './Destinations';
 import Login from './Login';
-import Signup from './Signup';
 import ProfileEdit from './ProfileEdit';
 import ProfilesList from './ProfilesList';
 import ProfileWizard from './ProfileWizard';
+import Signup from './Signup';
 import SyncRunsPage from './SyncRunsPage';
-import DestinationsPage from './Destinations';
-import ConnectorsPage from './Connectors';
 
 function Dashboard() {
   const { totalProfiles } = useDashboardStats();

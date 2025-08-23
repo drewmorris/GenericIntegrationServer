@@ -200,3 +200,5 @@ new_metric_counter = Counter(
 # In your code
 new_metric_counter.labels(label1="value1", label2="value2").inc()
 ```
+
+

@@ -1,25 +1,25 @@
-import React, { useMemo, useState } from 'react';
 import {
-  Stepper,
-  Step,
-  StepLabel,
+  Alert,
   Button,
-  TextField,
   Container,
   MenuItem,
-  Typography,
-  Stack,
   Paper,
-  Alert,
+  Stack,
+  Step,
+  StepLabel,
+  Stepper,
+  TextField,
+  Typography,
 } from '@mui/material';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useSnack } from '../components/Snackbar';
+import { useConnectorDefinitions } from '../hooks/useConnectorDefinitions';
 import { useCreateProfile } from '../hooks/useCreateProfile';
-import { useDestinationDefinitions } from '../hooks/useDestinations';
-import { useConnectorDefinitions } from '../hooks/useConnectors';
 import { useCredentials } from '../hooks/useCredentials';
+import { useDestinationDefinitions } from '../hooks/useDestinationDefinitions';
 import { api } from '../lib/api';
 
 const steps = ['Basics', 'Connector', 'Destination', 'Review'];
@@ -121,7 +121,7 @@ export default function ProfileWizard() {
 
   const renderSchemaForm = (
     schema?: any,
-    values?: Record<string, string>,
+    _values?: Record<string, string>,
     setValues?: (fn: any) => void,
   ) => {
     const props = schema?.properties ?? {};

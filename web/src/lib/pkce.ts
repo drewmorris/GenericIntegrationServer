@@ -12,7 +12,7 @@ export function randomVerifier(length = 64): string {
 }
 
 function base64url(buffer: ArrayBuffer): string {
-  const str = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  const str = btoa(String.fromCodePoint(...new Uint8Array(buffer)));
   return str.replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 }
 

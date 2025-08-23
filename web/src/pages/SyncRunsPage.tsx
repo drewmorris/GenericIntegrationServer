@@ -1,12 +1,12 @@
 import {
+  Chip,
+  CircularProgress,
   Table,
+  TableBody,
+  TableCell,
   TableHead,
   TableRow,
-  TableCell,
-  TableBody,
-  CircularProgress,
   Typography,
-  Chip,
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
 

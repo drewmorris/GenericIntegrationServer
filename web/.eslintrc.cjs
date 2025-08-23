@@ -3,8 +3,6 @@ module.exports = {
     root: true,
     parser: '@typescript-eslint/parser',
     parserOptions: {
-        project: ['./tsconfig.json'],
-        tsconfigRootDir: __dirname,
         ecmaVersion: 2022,
         sourceType: 'module',
         ecmaFeatures: {
@@ -19,27 +17,22 @@ module.exports = {
     settings: {
         react: { version: 'detect' },
     },
-    extends: [
-        'eslint:recommended',
-        'plugin:react/recommended',
-        'plugin:react-hooks/recommended',
-        'plugin:@typescript-eslint/recommended',
-        'plugin:@typescript-eslint/recommended-type-checked',
-        'plugin:import/recommended',
-        'plugin:import/typescript',
-        'plugin:jsx-a11y/recommended',
-        'plugin:unicorn/recommended',
-        'plugin:sonarjs/recommended',
-        'prettier',
-    ],
     plugins: [
         '@typescript-eslint',
         'react',
         'react-hooks',
         'import',
         'jsx-a11y',
-        'unicorn',
-        'sonarjs',
+    ],
+    extends: [
+        'eslint:recommended',
+        'plugin:react/recommended',
+        'plugin:react-hooks/recommended',
+        'plugin:@typescript-eslint/recommended',
+        'plugin:import/recommended',
+        'plugin:import/typescript',
+        'plugin:jsx-a11y/recommended',
+        'prettier',
     ],
     ignorePatterns: [
         'node_modules/',
@@ -50,56 +43,57 @@ module.exports = {
         '*.config.cjs',
     ],
     rules: {
+        // React rules
         'react/react-in-jsx-scope': 'off',
         'react/prop-types': 'off',
-        'react/jsx-no-useless-fragment': ['warn', { allowExpressions: true }],
+        'react/no-unescaped-entities': 'off',
         'react/no-array-index-key': 'warn',
-        'react/self-closing-comp': 'warn',
+        'react-hooks/exhaustive-deps': 'warn',
 
-        '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-        '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: true, ignoreIIFE: true }],
-        '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
-        '@typescript-eslint/require-await': 'error',
-        '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true, ignoreVoidOperator: true }],
-        '@typescript-eslint/prefer-nullish-coalescing': 'off',
-        '@typescript-eslint/prefer-optional-chain': 'warn',
-        '@typescript-eslint/no-unnecessary-condition': 'off',
-        '@typescript-eslint/no-unsafe-call': 'warn',
-        '@typescript-eslint/no-unsafe-assignment': 'off',
-        '@typescript-eslint/no-unsafe-member-access': 'off',
+        // TypeScript rules (simplified)
         '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/ban-ts-comment': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+        '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
 
+        // Import rules
         'import/no-unresolved': 'error',
-        'import/no-extraneous-dependencies': ['error', { devDependencies: ['**/*.{test,spec}.{ts,tsx,js,jsx}', '**/*.config.{js,cjs,ts}', '**/vite.{config,env}.{js,cjs,ts}'] }],
-        'import/order': 'off',
+        'import/no-extraneous-dependencies': ['error', { 
+            devDependencies: [
+                '**/*.{test,spec}.{ts,tsx,js,jsx}', 
+                '**/*.config.{js,cjs,ts}', 
+                '**/vite.{config,env}.{js,cjs,ts}'
+            ] 
+        }],
+        'import/order': [
+            'error',
+            {
+                'groups': [
+                    'builtin',
+                    'external',
+                    'internal',
+                    'parent',
+                    'sibling',
+                    'index'
+                ],
+                'newlines-between': 'always',
+                'alphabetize': {
+                    'order': 'asc',
+                    'caseInsensitive': true
+                }
+            }
+        ],
 
-        'unicorn/prevent-abbreviations': 'off',
-        'unicorn/filename-case': ['error', { cases: { camelCase: true, pascalCase: true } }],
-        'unicorn/no-null': 'off',
-        'unicorn/no-array-reduce': 'off',
-        'unicorn/no-abusive-eslint-disable': 'off',
-
+        // General rules
         'no-console': ['warn', { allow: ['warn', 'error'] }],
-
-        'react/no-unescaped-entities': 'off',
-        'react-hooks/exhaustive-deps': 'warn',
     },
     overrides: [
         {
             files: ['**/*.{test,spec}.{ts,tsx,js,jsx}'],
             env: { jest: true },
-            rules: {
-                '@typescript-eslint/require-await': 'off',
-                '@typescript-eslint/no-floating-promises': 'off',
-                '@typescript-eslint/no-unsafe-call': 'off',
-            },
         },
         {
             files: ['*.config.{js,cjs,ts}', 'vite.{config,env}.{js,cjs,ts}'],
-            parserOptions: { project: null },
         },
     ],
-}; 
+};

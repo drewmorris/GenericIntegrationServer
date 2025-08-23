@@ -1,22 +1,34 @@
+/**
+ * Hook for fetching destinations
+ * Provides access to configured destinations for the current organization
+ */
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
-export type DestinationDefinition = {
+export type Destination = {
+  id: string;
   name: string;
-  schema: Record<string, unknown> & {
-    title?: string;
-    properties?: Record<string, any>;
-    required?: string[];
-    uiSchema?: Record<string, any>;
-  };
+  displayName?: string;
+  config: Record<string, any>;
+  status: 'active' | 'inactive' | 'error';
+  createdAt: string;
+  updatedAt: string;
+  lastSync?: string;
+  syncCount?: number;
+  errorCount?: number;
+  connectorCount?: number;
 };
 
-export function useDestinationDefinitions() {
-  return useQuery<DestinationDefinition[], Error>({
-    queryKey: ['destination-definitions'],
-    queryFn: async () => {
-      const { data } = await api.get<DestinationDefinition[]>('/destinations/definitions');
-      return data;
-    },
+const fetchDestinations = async (): Promise<Destination[]> => {
+  const response = await api.get('/destinations');
+  return response.data as Destination[];
+};
+
+export const useDestinations = () => {
+  return useQuery({
+    queryKey: ['destinations'],
+    queryFn: fetchDestinations,
+    staleTime: 30 * 1000, // 30 seconds
+    cacheTime: 5 * 60 * 1000, // 5 minutes
   });
-}
+};

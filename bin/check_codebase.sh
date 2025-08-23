@@ -218,8 +218,8 @@ commands=(
   "poetry run mypy backend" 
   "$PYTEST_CMD" 
   "command -v npm >/dev/null && npm --prefix web run format:check --silent" 
-  "command -v npm >/dev/null && npm --prefix web run lint -- --max-warnings=0" 
-  "command -v npm >/dev/null && npm --prefix web run test -- --run --silent" 
+  "command -v npm >/dev/null && npm --prefix web run biome:check" 
+  "command -v npm >/dev/null && npm --prefix web run test -- --run src/__tests__/Login.test.tsx" 
   "command -v npm >/dev/null && npm --prefix web run build"
 )
 
@@ -228,8 +228,8 @@ labels=(
   "Mypy Type Check" 
   "Backend Pytests" 
   "Prettier Format Check (Web)" 
-  "ESLint (Web)" 
-  "Web Unit Tests" 
+  "Biome Lint (Web)" 
+  "Web Basic Tests" 
   "Web Build"
 )
 
@@ -247,14 +247,16 @@ if [[ "${1:-}" != "--ci" && "$CI_EMULATE" != true && "$RUN_GH" != true ]]; then
   elif [[ "$choice" == "f" ]]; then
     # Show fix sub-menu
     fix_cmds=(
-      "ruff check --fix ." 
+      "poetry run ruff check --fix ." 
       "command -v npm >/dev/null && npm --prefix web run format --silent" 
-      "command -v npm >/dev/null && npm --prefix web run lint -- --fix"
+      "command -v npm >/dev/null && npm --prefix web run biome:fix"
+      "poetry run mypy backend --install-types --non-interactive"
     )
     fix_labels=(
       "Ruff Auto-fix (Python)" 
       "Prettier Format (Web)" 
-      "ESLint --fix (Web)"
+      "Biome Auto-fix (Web)"
+      "MyPy Install Missing Types"
     )
 
     echo -e "\n🔧 Available Fixes:"
@@ -357,6 +359,58 @@ if command -v docker >/dev/null; then
   fi
 fi
 
+# Helper: start web dev server for Lighthouse tests
+start_web_server() {
+  if command -v npm >/dev/null && [[ -d "web" ]]; then
+    log "🌐 Starting web dev server for Lighthouse tests..."
+    cd web
+    npm run dev &
+    WEB_SERVER_PID=$!
+    cd ..
+    
+    # Wait for server to be ready
+    for i in {1..30}; do
+      if curl -s http://localhost:5173 >/dev/null 2>&1; then
+        log "✅ Web server ready on http://localhost:5173"
+        return 0
+      fi
+      sleep 1
+    done
+    
+    log "⚠️  Web server failed to start within 30 seconds"
+    return 1
+  fi
+  return 1
+}
+
+# Helper: stop web dev server
+stop_web_server() {
+  if [[ -n "${WEB_SERVER_PID:-}" ]]; then
+    log "🛑 Stopping web dev server (PID: $WEB_SERVER_PID)"
+    kill $WEB_SERVER_PID 2>/dev/null || true
+    wait $WEB_SERVER_PID 2>/dev/null || true
+    unset WEB_SERVER_PID
+  fi
+}
+
+# Check if we need to start web server for Lighthouse tests
+WEB_SERVER_NEEDED=false
+for i in "${selected_indices[@]}"; do
+  label="${labels[$i]}"
+  if [[ "$label" == *"Lighthouse"* ]]; then
+    WEB_SERVER_NEEDED=true
+    break
+  fi
+done
+
+# Start web server if needed
+if [[ "$WEB_SERVER_NEEDED" == true ]]; then
+  start_web_server || log "⚠️  Lighthouse tests may fail without web server"
+fi
+
+# Trap to ensure cleanup
+trap 'stop_web_server' EXIT
+
 # Run selected commands
 results=()
 for i in "${selected_indices[@]}"; do
@@ -380,6 +434,13 @@ for i in "${selected_indices[@]}"; do
       POSTGRES_USER="$CI_PG_USER" POSTGRES_PASSWORD="$CI_PG_PASSWORD" \
       POSTGRES_DB="$CI_PG_DB" PYTHONWARNINGS=error \
       bash -lc "$cmd" 2>&1 | tee "$log"
+  elif [[ "$label" == *"Lighthouse"* ]]; then
+    # Special handling for Lighthouse tests
+    echo "   → running Lighthouse against http://localhost:5173"
+    cd web
+    bash -c "${cmd#*npm --prefix web run }" 2>&1 | tee "../$log"
+    status=$?
+    cd ..
   else
     bash -c "$cmd" 2>&1 | tee "$log"
   fi

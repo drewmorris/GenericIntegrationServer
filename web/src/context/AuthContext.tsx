@@ -1,9 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-
+import type { AxiosError, AxiosRequestConfig } from 'axios';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useSnack } from '../components/Snackbar';
 import { api, setupInterceptors } from '../lib/api';
-
-import type { AxiosError, AxiosRequestConfig } from 'axios';
 
 type AuthState = {
   accessToken: string | null;
@@ -25,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.getItem('refresh_token'),
   );
 
-  const login = (access: string, refresh: string) => {
+  const login = useCallback((access: string, refresh: string) => {
     setAccess(access);
     setRefresh(refresh);
     localStorage.setItem('access_token', access);
@@ -44,14 +42,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         // ignore; user can still proceed but org-scoped lists may be empty
       });
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setAccess(null);
     setRefresh(null);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-  };
+  }, []);
 
   const snack = useSnack();
 
@@ -78,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     });
     return () => api.interceptors.response.eject(id);
-  }, [accessToken, refreshToken, snack.enqueue]);
+  }, [accessToken, refreshToken, login, logout, snack.enqueue]);
 
   return (
     <AuthContext.Provider value={{ accessToken, refreshToken, login, logout }}>
