@@ -146,7 +146,7 @@ export const DestinationDeleteDialog: React.FC<DestinationDeleteDialogProps> = (
         </Typography>
 
         <List dense>
-          {impactItems.map((item) => (
+          {impactItems.map((item, index) => (
             <React.Fragment key={item.primary}>
               <ListItem>
                 <ListItemIcon>

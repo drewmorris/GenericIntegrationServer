@@ -9,7 +9,7 @@ import { render, screen } from '@testing-library/react';
 import type React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { createMockMutationResult, createMockQueryResult } from '../../../test-utils/mockHelpers';
 import { DestinationManagement } from '../DestinationManagement';
 
 // Mock hooks
@@ -21,7 +21,7 @@ const mockDestinations = [
     id: 'dest-1',
     name: 'cleverbrag',
     displayName: 'CleverBrag',
-    status: 'active',
+    status: 'active' as const,
     config: { api_key: 'test' },
     createdAt: '2025-01-20T10:00:00Z',
     updatedAt: '2025-01-21T10:00:00Z',
@@ -71,15 +71,21 @@ describe('DestinationManagement', () => {
     const { useDeleteDestination } = await import('../../../hooks/useDeleteDestination');
 
     vi.mocked(useDestinations).mockReturnValue({
-      data: mockDestinations,
-      isLoading: false,
-      error: null,
-      refetch: mockRefetch,
+      ...createMockQueryResult({
+        data: mockDestinations,
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+        refetch: mockRefetch,
+      }),
+      destinations: mockDestinations,
     });
 
-    vi.mocked(useDeleteDestination).mockReturnValue({
-      mutateAsync: mockDeleteDestination,
-    });
+    vi.mocked(useDeleteDestination).mockReturnValue(
+      createMockMutationResult({
+        mutateAsync: mockDeleteDestination,
+      }),
+    );
   });
 
   it('renders destination management page', () => {
@@ -93,18 +99,21 @@ describe('DestinationManagement', () => {
     renderDestinationManagement();
 
     expect(screen.getByText('Total Destinations')).toBeInTheDocument();
-    expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('Inactive')).toBeInTheDocument();
-    expect(screen.getByText('Errors')).toBeInTheDocument();
+    expect(screen.getAllByText('Active')[0]).toBeInTheDocument(); // First instance (status card)
+    expect(screen.getAllByText('Inactive')[0]).toBeInTheDocument(); // First instance (status card)
+    expect(screen.getAllByText('Errors')[0]).toBeInTheDocument(); // First instance (status card)
   });
 
   it('shows loading state', async () => {
     const { useDestinations } = await import('../../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-      refetch: mockRefetch,
+      ...createMockQueryResult({
+        data: undefined,
+        isLoading: true,
+        error: null,
+        refetch: mockRefetch,
+      }),
+      destinations: [],
     });
 
     renderDestinationManagement();
@@ -116,10 +125,14 @@ describe('DestinationManagement', () => {
   it('shows error state with retry option', async () => {
     const { useDestinations } = await import('../../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to load'),
-      refetch: mockRefetch,
+      ...createMockQueryResult({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Failed to load'),
+        isError: true,
+        refetch: mockRefetch,
+      }),
+      destinations: [],
     });
 
     renderDestinationManagement();
@@ -131,10 +144,14 @@ describe('DestinationManagement', () => {
   it('shows empty state when no destinations exist', async () => {
     const { useDestinations } = await import('../../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      refetch: mockRefetch,
+      ...createMockQueryResult({
+        data: [],
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+        refetch: mockRefetch,
+      }),
+      destinations: [],
     });
 
     renderDestinationManagement();

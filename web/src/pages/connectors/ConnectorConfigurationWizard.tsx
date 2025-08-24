@@ -312,7 +312,7 @@ export const ConnectorConfigurationWizard: React.FC = () => {
                               : `Step ${index + 1}: ${step.label} - Not started`
                         }
                       >
-                        <StepIcon sx={{ fontSize: 20 }} />
+                        <StepIcon />
                       </Box>
                     )}
                   >

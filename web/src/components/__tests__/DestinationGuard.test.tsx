@@ -9,7 +9,7 @@ import { render, screen } from '@testing-library/react';
 import type React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { createMockQueryResult } from '../../test-utils/mockHelpers';
 import { DestinationGuard } from '../DestinationGuard';
 
 // Mock the useDestinations hook
@@ -49,9 +49,33 @@ describe('DestinationGuard', () => {
   it('renders children when destinations exist', async () => {
     const { useDestinations } = await import('../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: [{ id: '1', name: 'Test Destination' }],
-      isLoading: false,
-      error: null,
+      ...createMockQueryResult({
+        data: [
+          {
+            id: '1',
+            name: 'Test Destination',
+            displayName: 'Test Destination',
+            config: { api_key: 'test' },
+            status: 'active' as const,
+            createdAt: '2025-01-20T10:00:00Z',
+            updatedAt: '2025-01-21T10:00:00Z',
+          },
+        ],
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+      }),
+      destinations: [
+        {
+          id: '1',
+          name: 'Test Destination',
+          displayName: 'Test Destination',
+          config: { api_key: 'test' },
+          status: 'active' as const,
+          createdAt: '2025-01-20T10:00:00Z',
+          updatedAt: '2025-01-21T10:00:00Z',
+        },
+      ],
     });
 
     render(
@@ -68,9 +92,12 @@ describe('DestinationGuard', () => {
   it('shows loading state while fetching destinations', async () => {
     const { useDestinations } = await import('../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
+      ...createMockQueryResult({
+        data: undefined,
+        isLoading: true,
+        error: null,
+      }),
+      destinations: [],
     });
 
     render(
@@ -82,15 +109,19 @@ describe('DestinationGuard', () => {
     );
 
     expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(screen.getByLabelText('Loading destinations')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('shows error state when destinations fail to load', async () => {
     const { useDestinations } = await import('../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to load'),
+      ...createMockQueryResult({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Failed to load'),
+        isError: true,
+      }),
+      destinations: [],
     });
 
     render(
@@ -108,9 +139,13 @@ describe('DestinationGuard', () => {
   it('allows access on onboarding routes', async () => {
     const { useDestinations } = await import('../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
+      ...createMockQueryResult({
+        data: [],
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+      }),
+      destinations: [],
     });
 
     render(

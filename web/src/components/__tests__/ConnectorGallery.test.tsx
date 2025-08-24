@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { createMockQueryResult } from '../../test-utils/mockHelpers';
 import { ConnectorGallery } from '../ConnectorGallery';
 
 // Mock the hooks
@@ -35,7 +35,8 @@ const mockConnectors = [
     source: 'gmail',
     name: 'Gmail',
     description: 'Sync emails and attachments from Gmail',
-    auth_type: 'oauth',
+    auth_type: 'oauth' as const,
+    category: 'Email',
   },
 ];
 
@@ -80,16 +81,23 @@ describe('ConnectorGallery', () => {
     const { useConnectorDefinitions } = await import('../../hooks/useConnectorDefinitions');
     const { useDestinations } = await import('../../hooks/useDestinations');
 
-    vi.mocked(useConnectorDefinitions).mockReturnValue({
-      data: mockConnectors,
-      isLoading: false,
-      error: null,
-    });
+    vi.mocked(useConnectorDefinitions).mockReturnValue(
+      createMockQueryResult({
+        data: mockConnectors,
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+      }),
+    );
 
     vi.mocked(useDestinations).mockReturnValue({
-      data: mockDestinations,
-      isLoading: false,
-      error: null,
+      ...createMockQueryResult({
+        data: mockDestinations,
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+      }),
+      destinations: mockDestinations,
     });
   });
 
@@ -105,11 +113,13 @@ describe('ConnectorGallery', () => {
 
   it('shows loading state', async () => {
     const { useConnectorDefinitions } = await import('../../hooks/useConnectorDefinitions');
-    vi.mocked(useConnectorDefinitions).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-    });
+    vi.mocked(useConnectorDefinitions).mockReturnValue(
+      createMockQueryResult({
+        data: undefined,
+        isLoading: true,
+        error: null,
+      }),
+    );
 
     render(
       <TestWrapper>
@@ -124,9 +134,13 @@ describe('ConnectorGallery', () => {
   it('shows no destinations message when no destinations exist', async () => {
     const { useDestinations } = await import('../../hooks/useDestinations');
     vi.mocked(useDestinations).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
+      ...createMockQueryResult({
+        data: [],
+        isLoading: false,
+        error: null,
+        isSuccess: true,
+      }),
+      destinations: [],
     });
 
     render(

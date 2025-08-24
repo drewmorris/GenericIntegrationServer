@@ -315,18 +315,18 @@ export { createAccessibleTheme };
 
 // Extend the Theme interface to include our custom variant
 declare module '@mui/material/styles' {
-  type TypographyVariants = {
+  interface TypographyVariants {
     srOnly: React.CSSProperties;
-  };
+  }
 
-  type TypographyVariantsOptions = {
+  interface TypographyVariantsOptions {
     srOnly?: React.CSSProperties;
-  };
+  }
 }
 
 // Update the Typography's variant prop options
 declare module '@mui/material/Typography' {
-  type TypographyPropsVariantOverrides = {
+  interface TypographyPropsVariantOverrides {
     srOnly: true;
-  };
+  }
 }

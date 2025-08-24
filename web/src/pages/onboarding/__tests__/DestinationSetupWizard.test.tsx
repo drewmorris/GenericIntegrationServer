@@ -9,7 +9,7 @@ import { render, screen } from '@testing-library/react';
 import type React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { createMockMutationResult } from '../../../test-utils/mockHelpers';
 import { DestinationSetupWizard } from '../DestinationSetupWizard';
 
 // Mock hooks and components
@@ -71,9 +71,11 @@ describe('DestinationSetupWizard', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     const { useCreateDestination } = await import('../../../hooks/useCreateDestination');
-    vi.mocked(useCreateDestination).mockReturnValue({
-      mutateAsync: mockCreateDestination,
-    });
+    vi.mocked(useCreateDestination).mockReturnValue(
+      createMockMutationResult({
+        mutateAsync: mockCreateDestination,
+      }),
+    );
   });
 
   it('renders wizard with main heading', () => {

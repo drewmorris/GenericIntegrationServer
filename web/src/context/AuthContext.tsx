@@ -1,6 +1,5 @@
 import type { AxiosError, AxiosRequestConfig } from 'axios';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useSnack } from '../components/Snackbar';
 import { api, setupInterceptors } from '../lib/api';
 
 type AuthState = {
@@ -51,10 +50,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('refresh_token');
   }, []);
 
-  const snack = useSnack();
-
   useEffect(() => {
-    setupInterceptors({ accessToken, refreshToken, login, logout, enqueue: snack.enqueue });
+    setupInterceptors(logout);
 
     const id = api.interceptors.response.use(undefined, async (error: AxiosError) => {
       // If token expired, attempt to refresh once then retry original request
@@ -76,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     });
     return () => api.interceptors.response.eject(id);
-  }, [accessToken, refreshToken, login, logout, snack.enqueue]);
+  }, [logout, login, refreshToken]);
 
   return (
     <AuthContext.Provider value={{ accessToken, refreshToken, login, logout }}>

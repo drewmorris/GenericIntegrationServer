@@ -43,7 +43,7 @@ export const useDestinationHealth = (destinationId: string) => {
     queryKey: ['destination-health', destinationId],
     queryFn: () => fetchDestinationHealth(destinationId),
     staleTime: 30 * 1000, // 30 seconds
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 60 * 1000, // Refetch every minute
   });
 };

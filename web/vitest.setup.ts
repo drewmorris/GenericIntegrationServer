@@ -3,11 +3,12 @@
  * Configures testing environment with accessibility and Material-UI support
  */
 import '@testing-library/jest-dom';
+import * as matchers from '@testing-library/jest-dom/matchers';
 import { expect, afterEach, beforeAll, afterAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
 // Extend Vitest's expect with jest-dom matchers
-expect.extend({});
+expect.extend(matchers);
 
 // Clean up after each test
 afterEach(() => {

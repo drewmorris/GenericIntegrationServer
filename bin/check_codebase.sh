@@ -219,8 +219,10 @@ commands=(
   "$PYTEST_CMD" 
   "command -v npm >/dev/null && npm --prefix web run format:check --silent" 
   "command -v npm >/dev/null && npm --prefix web run biome:check" 
-  "command -v npm >/dev/null && npm --prefix web run test -- --run src/__tests__/Login.test.tsx" 
+  "command -v npm >/dev/null && npm --prefix web run tsc:check" 
+  "command -v npm >/dev/null && npm --prefix web run test:all" 
   "command -v npm >/dev/null && npm --prefix web run build"
+  "command -v npm >/dev/null && npm --prefix web run performance:test"
 )
 
 labels=(
@@ -229,8 +231,10 @@ labels=(
   "Backend Pytests" 
   "Prettier Format Check (Web)" 
   "Biome Lint (Web)" 
-  "Web Basic Tests" 
+  "TypeScript Type Check (Web)" 
+  "Web Comprehensive Tests" 
   "Web Build"
+  "Lighthouse Performance Test"
 )
 
 # Show interactive menu unless --ci supplied

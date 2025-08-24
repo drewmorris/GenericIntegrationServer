@@ -11,6 +11,11 @@ export type ConnectorDefinition = {
   description: string;
   auth_type: 'oauth' | 'static' | 'none';
   category: string;
+  schema?: {
+    title?: string;
+    properties?: Record<string, any>;
+    required?: string[];
+  };
 };
 
 const fetchConnectorDefinitions = async (): Promise<ConnectorDefinition[]> => {
@@ -23,6 +28,6 @@ export const useConnectorDefinitions = () => {
     queryKey: ['connector-definitions'],
     queryFn: fetchConnectorDefinitions,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };

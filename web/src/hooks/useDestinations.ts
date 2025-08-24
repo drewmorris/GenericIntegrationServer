@@ -25,10 +25,15 @@ const fetchDestinations = async (): Promise<Destination[]> => {
 };
 
 export const useDestinations = () => {
-  return useQuery({
+  const result = useQuery({
     queryKey: ['destinations'],
     queryFn: fetchDestinations,
     staleTime: 30 * 1000, // 30 seconds
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  return {
+    ...result,
+    destinations: result.data || [],
+  };
 };
