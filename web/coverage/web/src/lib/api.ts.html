@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">31.81% </span>
+                <span class="strong">24.44% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/44</span>
+                <span class='fraction'>11/45</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">31.81% </span>
+                <span class="strong">24.44% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>14/44</span>
+                <span class='fraction'>11/45</span>
             </div>
         
             
@@ -123,15 +123,33 @@
 <a name='L58'></a><a href='#L58'>58</a>
 <a name='L59'></a><a href='#L59'>59</a>
 <a name='L60'></a><a href='#L60'>60</a>
-<a name='L61'></a><a href='#L61'>61</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -155,16 +173,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -172,10 +180,24 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -189,6 +211,13 @@
  */
 import axios from 'axios';
 &nbsp;
+// Extend the AxiosRequestConfig interface to include skipAuthRefresh
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    skipAuthRefresh?: boolean;
+  }
+}
+&nbsp;
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 &nbsp;
 export const api = axios.create({
@@ -201,11 +230,11 @@ export const api = axios.create({
 // Add request interceptor for authentication
 api.interceptors.request.use((config) =&gt; {
 <span class="cstat-no" title="statement not covered" >  const token = localStorage.getItem('access_token');</span>
-<span class="cstat-no" title="statement not covered" >  if (token) {</span>
+<span class="cstat-no" title="statement not covered" >  if (token &amp;&amp; !config.skipAuthRefresh) {</span>
 <span class="cstat-no" title="statement not covered" >    config.headers.Authorization = `Bearer ${token}`;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const orgId = localStorage.getItem('organization_id');</span>
+<span class="cstat-no" title="statement not covered" >  const orgId = localStorage.getItem('org_id');</span>
 <span class="cstat-no" title="statement not covered" >  if (orgId) {</span>
 <span class="cstat-no" title="statement not covered" >    config.headers['X-Org-ID'] = orgId;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -213,35 +242,39 @@ api.interceptors.request.use((config) =&gt; {
 <span class="cstat-no" title="statement not covered" >  return config;</span>
 <span class="cstat-no" title="statement not covered" >});</span>
 &nbsp;
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) =&gt; response,
-  (error) =&gt; {
-<span class="cstat-no" title="statement not covered" >    if (error.response?.status === 401) {</span>
-      // Handle unauthorized - could trigger logout
-<span class="cstat-no" title="statement not covered" >      localStorage.removeItem('access_token');</span>
-<span class="cstat-no" title="statement not covered" >      localStorage.removeItem('refresh_token');</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >    return Promise.reject(new Error((error as Error).message || 'API request failed'));</span>
-<span class="cstat-no" title="statement not covered" >  },</span>
-);
+// Global response interceptor ID to manage cleanup
+let responseInterceptorId: number | null = null;
 &nbsp;
 // Setup interceptors function for AuthContext
-export const setupInterceptors = <span class="fstat-no" title="function not covered" >(onUnauthorized?: () =&gt; void) =&gt; {</span>
-  // Update response interceptor to handle unauthorized with callback
-<span class="cstat-no" title="statement not covered" >  api.interceptors.response.use(</span>
+export const setupInterceptors = <span class="fstat-no" title="function not covered" >(onUnauthorized: () =&gt; void) =&gt; {</span>
+  // Clear existing interceptor if any
+<span class="cstat-no" title="statement not covered" >  if (responseInterceptorId !== null) {</span>
+<span class="cstat-no" title="statement not covered" >    api.interceptors.response.eject(responseInterceptorId);</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+&nbsp;
+  // Set up single response interceptor with proper error handling
+<span class="cstat-no" title="statement not covered" >  responseInterceptorId = api.interceptors.response.use(</span>
 <span class="cstat-no" title="statement not covered" >    (response) =&gt; response,</span>
 <span class="cstat-no" title="statement not covered" >    (error) =&gt; {</span>
+      // Handle authentication errors globally
 <span class="cstat-no" title="statement not covered" >      if (error.response?.status === 401) {</span>
+<span class="cstat-no" title="statement not covered" >        console.warn('Authentication failed - redirecting to login');</span>
 <span class="cstat-no" title="statement not covered" >        localStorage.removeItem('access_token');</span>
 <span class="cstat-no" title="statement not covered" >        localStorage.removeItem('refresh_token');</span>
-<span class="cstat-no" title="statement not covered" >        if (onUnauthorized) {</span>
-<span class="cstat-no" title="statement not covered" >          onUnauthorized();</span>
-<span class="cstat-no" title="statement not covered" >        }</span>
+<span class="cstat-no" title="statement not covered" >        localStorage.removeItem('user_id');</span>
+<span class="cstat-no" title="statement not covered" >        localStorage.removeItem('org_id');</span>
+<span class="cstat-no" title="statement not covered" >        onUnauthorized();</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >      return Promise.reject(new Error((error as Error).message || 'API request failed'));</span>
+<span class="cstat-no" title="statement not covered" >      return Promise.reject(error);</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  );</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  return () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (responseInterceptorId !== null) {</span>
+<span class="cstat-no" title="statement not covered" >      api.interceptors.response.eject(responseInterceptorId);</span>
+<span class="cstat-no" title="statement not covered" >      responseInterceptorId = null;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
 <span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -250,7 +283,7 @@ export const setupInterceptors = <span class="fstat-no" title="function not cove
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-24T16:18:05.862Z
+                at 2025-08-25T00:15:34.476Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

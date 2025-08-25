@@ -297,6 +297,28 @@ async def get_active_index_attempts(
     return result.scalars().all()
 
 
+async def get_active_index_attempts_for_org(
+    db: AsyncSession,
+    organization_id: str
+) -> Sequence[m.IndexAttempt]:
+    """Get all active index attempts for an organization (for real-time monitoring)"""
+    query = (
+        select(m.IndexAttempt)
+        .join(m.ConnectorCredentialPair)
+        .where(
+            and_(
+                m.IndexAttempt.status == m.IndexingStatus.IN_PROGRESS,
+                m.ConnectorCredentialPair.organization_id == uuid.UUID(organization_id)
+            )
+        )
+        .options(selectinload(m.IndexAttempt.connector_credential_pair))
+        .order_by(desc(m.IndexAttempt.time_created))
+    )
+    
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 async def update_index_attempt(
     db: AsyncSession,
     attempt_id: int,

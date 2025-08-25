@@ -1,5 +1,6 @@
 // @ts-nocheck
 import {
+  Box,
   Button,
   CircularProgress,
   Table,
@@ -11,12 +12,32 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useProfiles } from '../hooks/useProfiles';
 
 export default function ProfilesList() {
-  const { data, isLoading } = useProfiles();
+  const { data, isLoading, error, refetch } = useProfiles();
 
-  if (isLoading) return <CircularProgress sx={{ mt: 4 }} />;
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ mt: 4 }}>
+        <ErrorDisplay
+          error={error}
+          title="Failed to load profiles"
+          variant="card"
+          onRetry={() => refetch()}
+        />
+      </Box>
+    );
+  }
 
   return (
     <>

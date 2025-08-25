@@ -352,12 +352,19 @@ async def create_index_attempt(
         )
 
 
-@router.get("/{cc_pair_id}/index-attempts", response_model=List[IndexAttemptOut])
+@router.get(
+    "/{cc_pair_id}/index-attempts", 
+    response_model=List[IndexAttemptOut],
+    summary="List index attempts",
+    description="Retrieve index attempts (sync operations) for a CC-Pair with real-time progress data. "
+                "Shows detailed sync status, progress, batch completion, and heartbeat information "
+                "for monitoring active and historical sync operations."
+)
 async def list_index_attempts(
     cc_pair_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    index_status: Optional[m.IndexingStatus] = Query(None, description="Filter by status"),
+    index_status: Optional[m.IndexingStatus] = Query(None, description="Filter by status (IN_PROGRESS, SUCCESS, FAILED, etc.)"),
     db: AsyncSession = Depends(get_db),
     current_user: m.User = Depends(get_current_user),
     current_org_id: str = Depends(get_current_org_id)
@@ -444,7 +451,14 @@ async def update_index_attempt(
         )
 
 
-@router.post("/index-attempts/{attempt_id}/cancel", response_model=IndexAttemptOut)
+@router.post(
+    "/index-attempts/{attempt_id}/cancel", 
+    response_model=IndexAttemptOut,
+    summary="Cancel index attempt",
+    description="Request cancellation of an active index attempt (sync operation). "
+                "Sets the cancellation_requested flag which the worker will check periodically. "
+                "The actual cancellation may take some time depending on the current batch processing."
+)
 async def cancel_index_attempt(
     attempt_id: int,
     db: AsyncSession = Depends(get_db),
@@ -491,4 +505,28 @@ async def cancel_index_attempt(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to cancel index attempt: {str(e)}"
+        )
+
+
+@router.get(
+    "/active-syncs",
+    response_model=List[IndexAttemptOut],
+    summary="Get active syncs",
+    description="Retrieve all currently active (in-progress) sync operations across the organization. "
+                "Useful for monitoring dashboard to show real-time sync status, progress bars, "
+                "and overall system activity. Includes heartbeat and progress information."
+)
+async def get_active_syncs(
+    db: AsyncSession = Depends(get_db),
+    current_user: m.User = Depends(get_current_user),
+    current_org_id: str = Depends(get_current_org_id)
+) -> List[m.IndexAttempt]:
+    """Get all active index attempts for the organization"""
+    try:
+        active_attempts = await cc_pair_ops.get_active_index_attempts_for_org(db, current_org_id)
+        return list(active_attempts)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve active syncs: {str(e)}"
         )

@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.51% </span>
+                <span class="strong">82.24% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>314/376</span>
+                <span class='fraction'>315/383</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60.71% </span>
+                <span class="strong">58.62% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>17/28</span>
+                <span class='fraction'>17/29</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.51% </span>
+                <span class="strong">82.24% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>314/376</span>
+                <span class='fraction'>315/383</span>
             </div>
         
             
@@ -547,7 +547,14 @@
 <a name='L482'></a><a href='#L482'>482</a>
 <a name='L483'></a><a href='#L483'>483</a>
 <a name='L484'></a><a href='#L484'>484</a>
-<a name='L485'></a><a href='#L485'>485</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L485'></a><a href='#L485'>485</a>
+<a name='L486'></a><a href='#L486'>486</a>
+<a name='L487'></a><a href='#L487'>487</a>
+<a name='L488'></a><a href='#L488'>488</a>
+<a name='L489'></a><a href='#L489'>489</a>
+<a name='L490'></a><a href='#L490'>490</a>
+<a name='L491'></a><a href='#L491'>491</a>
+<a name='L492'></a><a href='#L492'>492</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -627,6 +634,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
@@ -657,6 +670,7 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
@@ -1085,7 +1099,7 @@ export const DestinationManagement: React.FC = () =&gt; {
     const filtered = destinations.filter((dest) =&gt; {
       const matchesSearch =
         dest.name.toLowerCase().includes(searchTerm.toLowerCase()<span class="branch-0 cbranch-no" title="branch not covered" >) ||</span>
-<span class="cstat-no" title="statement not covered" >        dest.displayName?.toLowerCase().includes(searchTerm.toLowerCase());</span>
+<span class="cstat-no" title="statement not covered" >        (dest.displayName || dest.display_name)?.toLowerCase().includes(searchTerm.toLowerCase());</span>
 &nbsp;
       const matchesFilter = filterType === <span class="branch-0 cbranch-no" title="branch not covered" >'all' || dest.status === filterType;</span>
 &nbsp;
@@ -1096,16 +1110,22 @@ export const DestinationManagement: React.FC = () =&gt; {
     filtered.sort((a, b) =&gt; {
 <span class="cstat-no" title="statement not covered" >      switch (sortType) {</span>
 <span class="cstat-no" title="statement not covered" >        case 'name': {</span>
-<span class="cstat-no" title="statement not covered" >          return (a.displayName || a.name).localeCompare(b.displayName || b.name);</span>
+<span class="cstat-no" title="statement not covered" >          return (a.displayName || a.display_name || a.name).localeCompare(</span>
+<span class="cstat-no" title="statement not covered" >            b.displayName || b.display_name || b.name,</span>
+<span class="cstat-no" title="statement not covered" >          );</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >        case 'status': {</span>
-<span class="cstat-no" title="statement not covered" >          return a.status.localeCompare(b.status);</span>
+<span class="cstat-no" title="statement not covered" >          return (a.status || 'inactive').localeCompare(b.status || 'inactive');</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >        case 'created': {</span>
-<span class="cstat-no" title="statement not covered" >          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();</span>
+<span class="cstat-no" title="statement not covered" >          const aDate = a.createdAt || a.created_at || new Date().toISOString();</span>
+<span class="cstat-no" title="statement not covered" >          const bDate = b.createdAt || b.created_at || new Date().toISOString();</span>
+<span class="cstat-no" title="statement not covered" >          return new Date(bDate).getTime() - new Date(aDate).getTime();</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >        case 'updated': {</span>
-<span class="cstat-no" title="statement not covered" >          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();</span>
+<span class="cstat-no" title="statement not covered" >          const aDate = a.updatedAt || a.updated_at || new Date().toISOString();</span>
+<span class="cstat-no" title="statement not covered" >          const bDate = b.updatedAt || b.updated_at || new Date().toISOString();</span>
+<span class="cstat-no" title="statement not covered" >          return new Date(bDate).getTime() - new Date(aDate).getTime();</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >        default: {</span>
 <span class="cstat-no" title="statement not covered" >          return 0;</span>
@@ -1141,7 +1161,8 @@ export const DestinationManagement: React.FC = () =&gt; {
   const getStatusCounts = () =&gt; {
     const counts = destinations.reduce(
       (acc, dest) =&gt; {
-        acc[dest.status] = (acc[dest.status] || 0) + 1;
+        const status = dest.<span class="branch-0 cbranch-no" title="branch not covered" >status || 'inactive';</span>
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
       {} as Record&lt;string, number&gt;,
@@ -1522,7 +1543,7 @@ const EmptyDestinationsState: React.FC&lt;EmptyDestinationsStateProps&gt; = ({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-24T16:18:06.954Z
+                at 2025-08-25T00:15:35.745Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

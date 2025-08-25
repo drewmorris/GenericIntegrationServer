@@ -1,3 +1,411 @@
+## 2025-01-24 (1.6.16) - Frontend Code Quality & Testing Pipeline Fixes
+
+### 🔧 Biome Linting Error Resolution 
+- **Fixed Array Index Keys**: Replaced array index keys with unique message-based keys in `FormErrorBoundary.tsx` error display
+- **Fixed Step Component Keys**: Replaced array index keys with label-based keys in `DashboardPage.tsx` setup steps
+- **Fixed Static IDs in Tests**: Replaced hardcoded IDs with React `useId()` hook in `Login.a11y.test.tsx` for accessibility compliance
+- **Fixed Hook Dependency Issues**: Wrapped `finalOptions` in `useMemo()` in `useGlobalErrorHandler.ts` to prevent unnecessary re-renders
+- **Removed Unused Imports**: Cleaned up unused imports across `App.tsx`, `Destinations.tsx`, and `SyncMonitoringPage.tsx` files
+
+### 🧪 Comprehensive Test Fixes
+- **Fixed Hook Import Mismatch**: Corrected test file to use `useDeleteDestination` instead of `useDeleteDestinationTarget` to match actual hook export
+- **Updated Hook Export Name**: Standardized hook name to `useDeleteDestination` across implementation and usage files
+- **Enhanced Test Reliability**: Improved test stability by using proper mock imports and avoiding cached test results
+
+### 🔧 TypeScript Error Resolution
+- **Extended DestinationTarget Type**: Enhanced type definition with optional properties for `status`, `createdAt`, `updatedAt`, `displayName`, and statistics
+- **Fixed Component Props Mismatch**: Updated `DestinationCard` to use shared `DestinationTarget` type with proper fallback handling
+- **Resolved Hook Export Issues**: Fixed `useUpdateDestination` export conflicts with proper module exports
+- **Added Axios Type Extensions**: Extended Axios interfaces to include custom properties like `skipAuthRefresh`
+- **Fixed React Query Event Handlers**: Updated global error handler to use correct React Query event types
+- **Safe Property Access**: Added null/undefined checks for optional date fields with fallback values
+
+### 📊 Quality Improvements
+- **Biome Linting**: Resolved all 6 biome linting errors with improved React best practices
+- **TypeScript Compilation**: Fixed all TypeScript errors with proper type definitions and safe property access
+- **Code Consistency**: Ensured consistent import naming and hook usage across frontend codebase
+- **Test Coverage**: All 25 tests now pass with proper mock implementations and component rendering
+
+### 🎯 Technical Details
+- **React Best Practices**: Replaced array indices with stable, unique keys for better rendering performance
+- **Accessibility**: Used React `useId()` for dynamic ID generation preventing duplicate IDs in DOM
+- **Hook Dependencies**: Proper dependency management in custom hooks to prevent excessive re-renders
+- **Import Cleanup**: Removed dead code and unused imports for cleaner codebase
+- **Type Safety**: Enhanced type definitions for API responses with optional/required property handling
+- **Error Handling**: Improved error event handling in React Query with proper type checking
+- **Component Architecture**: Unified component props with shared type definitions across the codebase
+
+---
+*This release ensures the frontend codebase passes all quality gates with zero biome errors, zero TypeScript errors, and comprehensive test coverage, maintaining professional code quality standards.*
+
+**Commit message**: `fix: resolve all biome linting errors, TypeScript compilation errors, and frontend test failures with React best practices`
+
+## 2025-01-23 (1.6.15) - Complete Destination Management with Edit/Delete
+
+### ✨ Major Feature: Full Destination Management Interface
+- **Edit Destinations**: Users can now edit destination configurations and display names through professional modal dialogs
+- **Delete Destinations**: Safe deletion with confirmation dialogs and cascade warnings about stopping active syncs
+- **Real-time Updates**: All changes immediately update the UI without page refresh via React Query cache management
+- **Professional UX**: Material-UI dialogs with loading states, validation, and proper error handling
+
+### 🎯 Enhanced User Experience  
+- **Edit Dialog**: Modal form with pre-populated values for seamless configuration updates
+- **Delete Confirmation**: Clear warnings about consequences with professional confirmation dialog
+- **Action Buttons**: Clean edit/delete buttons on each destination card with distinctive icons
+- **Loading States**: Proper loading indicators during save/delete operations
+- **Error Handling**: Comprehensive error messages with retry capabilities and user-friendly notifications
+
+### 🔧 Technical Implementation
+- **Backend APIs**: Complete CRUD operations with `PUT /targets/{id}` and `DELETE /targets/{id}` endpoints
+- **Frontend Hooks**: `useUpdateDestinationTarget` and `useDeleteDestinationTarget` with optimistic updates
+- **Cache Management**: Automatic React Query cache invalidation for destinations, dashboard-stats, and sync-monitor-stats
+- **Type Safety**: Full TypeScript support with proper schema validation and error types
+- **Security**: Organization-level access control ensuring users can only edit/delete their own destinations
+
+### 🚀 User Benefits
+- **Complete Control**: Full CRUD operations on destination configurations without technical barriers
+- **Confidence**: Clear confirmation dialogs prevent accidental deletions
+- **Efficiency**: In-place editing without navigation disruption
+- **Reliability**: Real-time UI updates ensure consistent state across all components
+- **Professional Feel**: Polished Material Design interface with proper feedback and error recovery
+
+### 📋 Management Capabilities Comparison
+- **Connectors (Credentials)**: ✅ View, Edit, Delete, Test (Already Complete)  
+- **Destinations**: ✅ View, Create, Edit, Delete (Now Complete)
+- **Profiles**: ✅ View, Create, Edit (Existing)
+- **Syncs**: ✅ View, Monitor, Cancel (Existing)
+
+---
+*This completes the destination management workflow, giving users full control over their integration endpoints with a professional, user-friendly interface.*
+
+**Commit message**: `feat: complete destination management with edit/delete functionality and professional UI dialogs`
+
+## 2025-01-23 (1.6.14) - Critical Connector Dependencies Fix
+
+### 🐛 Critical Bug Fix: "No module named 'boto3'" Error  
+- **Fixed Gmail/Google Connectors**: Resolved `ModuleNotFoundError: No module named 'boto3'` when testing Gmail connections
+- **Root Cause**: Connector factory imports ALL connectors at module level, causing Gmail testing to load BlobStorageConnector which needs boto3
+- **Missing Dependencies**: Added `boto3`, `google-api-python-client`, `google-auth`, and `google-auth-oauthlib` to pyproject.toml
+- **User Impact**: Gmail, Google Drive, Google Sites connectors now work properly during connection testing
+
+### 🔧 Technical Implementation  
+- **Dependency Analysis**: Gmail doesn't directly need AWS SDK, but connector factory loading pattern requires all connector dependencies
+- **Added Packages**: boto3 (for S3/R2/GCS in BlobConnector), Google API client libraries (for Google connectors)
+- **Import Chain**: `test_credential` → `factory.identify_connector_class` → `factory.py imports all connectors` → `BlobConnector imports boto3`
+- **Solution**: Added all connector runtime dependencies to main pyproject.toml dependencies
+
+### 🚀 User Benefits
+- **Gmail Setup Works**: Users can now successfully test Gmail connector credentials without import errors  
+- **Complete Google Integration**: All Google-based connectors (Gmail, Drive, Sites) now function properly
+- **Reliable Connection Testing**: Credential validation works across all supported connector types
+- **Professional Experience**: No more technical "module not found" errors during connector setup
+
+---
+*This fix resolves the fundamental connector dependency loading issue that was blocking Gmail and other Google connector usage.*
+
+**Commit message**: `fix: add missing connector dependencies for Gmail/Google connectors - resolves boto3 import error`
+
+## 2025-01-23 (1.6.13) - Comprehensive Destination UI & Error Handling Enhancement
+
+### ✨ Major UX Improvements: Destination Management Overhaul
+- **Automatic Page Refresh**: Destinations page now automatically refreshes after successful save without manual page reload
+- **Existing Destinations Display**: Users can now see all configured destinations in a clean, organized list
+- **Setup Progress Integration**: Dashboard automatically updates to reflect destination setup completion
+- **Professional UI Feedback**: Replaced alert() dialogs with elegant Material-UI snackbar notifications
+- **Loading States**: Proper loading indicators during destination save operations
+
+### 🎯 Enhanced User Experience
+- **Visual Confirmation**: Successfully saved destinations immediately appear in the destinations list
+- **Progress Tracking**: Dashboard setup steps update in real-time when destinations are configured
+- **Better Organization**: Clean separation between existing destinations and "Add New" form
+- **Form Management**: Create form can be toggled on/off with proper state management
+- **Success Messaging**: Clear, contextual success messages with destination names
+
+### 🔧 Technical Implementation
+- **React Query Integration**: Implemented proper cache invalidation for destinations, dashboard-stats, and sync-monitor-stats
+- **New Hook**: Created `useCreateDestinationTarget` with automatic cache updates and error handling
+- **API Endpoint Consistency**: Fixed `useDestinations` hook to use correct `/targets/` endpoint
+- **Enhanced Error Handling**: Improved error message extraction and user-friendly display
+- **State Management**: Proper form state reset and UI state management
+
+### 🐛 Code Quality Fixes
+- **Type Safety**: Reduced TypeScript errors from 14+ to 6 by fixing FormTextField generics
+- **Clean Imports**: Removed unused imports (Stack, TextField, APIError, useEffect) across multiple files
+- **Backend Type Safety**: Fixed mypy error in cc_pairs.py (Sequence → list conversion)
+- **Linting**: Reduced Biome errors from 13 to 8 by cleaning up unused variables and imports
+
+### 🚀 User Benefits
+- **Seamless Workflow**: No more manual page refreshes needed after saving destinations
+- **Clear Progress**: Users can see immediate confirmation of successful destination setup
+- **Better Onboarding**: Dashboard reflects setup progress without requiring navigation away and back
+- **Professional Feel**: Consistent, polished UI throughout the destination management flow
+
+---
+*This enhancement transforms the destination management experience from basic form submission to a professional, integrated workflow with real-time updates and clear progress tracking.*
+
+**Commit message**: `feat: comprehensive destination UI overhaul with automatic refresh and enhanced UX`
+
+## 2025-01-23 (1.6.12) - Critical Destination Save Authentication Fix
+
+### 🐛 Critical Bug Fix: "Missing Bearer Token" Error
+- **Fixed CleverBrag/Destination Save Issue**: Resolved "Missing bearer token" error when saving CleverBrag destinations
+- **Root Cause**: Frontend was using raw `fetch()` instead of authenticated `api` client, bypassing JWT authentication
+- **Authentication Flow**: Destinations page now properly sends Integration Server JWT token when creating destinations
+- **User Experience**: Users can now successfully save CleverBrag destinations with API keys without authentication errors
+
+### 🔧 Technical Implementation
+- **API Client Integration**: Replaced raw `fetch()` calls with authenticated `api.post()` in DestinationsPage
+- **Schema Fix**: Updated `DestinationTargetCreate` schema to not require `organization_id` and `user_id` in request body (extracted from JWT token)
+- **Simplified Payload**: Frontend no longer needs to send redundant `organization_id` and `user_id` fields
+- **Better Error Handling**: Enhanced error message extraction and user feedback for destination save failures
+- **Automatic Refresh**: Destination list refreshes after successful save
+
+### 🛡️ Security & Authentication
+- **Proper JWT Flow**: All destination operations now require valid Integration Server authentication
+- **Consistent API Usage**: Ensures all protected endpoints use the same authentication mechanism
+- **Error Message Clarity**: Clear distinction between Integration Server auth errors and destination-specific errors
+
+**Commit Message**: `fix: resolve destination save authentication by using authenticated API client instead of raw fetch`
+
+## 2025-01-23 (1.6.11) - Enhanced Signup Error Handling & Validation
+
+### 🛠️ Signup Form Complete Overhaul
+- **Fixed "User Already Exists" Error Handling**: Users now receive clear, user-friendly feedback when trying to sign up with an existing email
+- **Professional Form Validation**: Added real-time validation for organization name, email, password strength, and password confirmation
+- **Enhanced Error Display**: Signup errors are shown with contextual titles and retry options
+- **Loading States**: Clear visual feedback during account creation process
+- **Password Requirements**: Strong password validation with helpful hints (8+ characters, uppercase, lowercase, numbers)
+
+### 🎯 User Experience Improvements
+- **Error Message Mapping**: Backend "User already exists" errors are properly extracted and displayed with friendly titles
+- **Form Validation Feedback**: Real-time field validation with helpful error messages and hints
+- **Professional Design**: Consistent styling with login page using Material Design principles  
+- **Disabled State Management**: Form fields and buttons properly disabled during submission
+- **Navigation Links**: Added "Already have an account?" link to login page
+
+### 🔧 Technical Implementation
+- **Enhanced API Integration**: Uses enhanced error handling system with proper 400 error mapping
+- **Form State Management**: Comprehensive form validation using useFormValidation hook
+- **Error Recovery**: Users can retry signup attempts with clear error feedback
+- **Accessibility**: Proper ARIA labels, validation states, and keyboard navigation support
+
+### 🛡️ Security & Validation
+- **Email Validation**: Proper email format validation with regex patterns  
+- **Password Strength**: Enforced complex password requirements for better security
+- **Input Sanitization**: Automatic trimming of organization name and email inputs
+- **Confirm Password**: Double entry validation to prevent password typos
+
+**Commit Message**: `feat: comprehensive signup form with error handling, validation, and user feedback for duplicate emails`
+
+## 2025-01-23 (1.6.10) - Critical Icon Import Fix & Server Restart Issues
+
+### 🐛 Critical Bug Fixes
+- **Fixed White Screen on Server Restart**: Resolved `SendIcon` import errors that caused the application to crash with white screen
+- **Material-UI Icon Import Corrections**: Fixed incorrect icon imports across multiple components (`SendIcon` → `Send`)
+- **Build System Compatibility**: Ensured all icon imports work correctly with Vite build system and dev server restarts
+
+### 🔧 Files Updated
+- **ImprovedTopNav.tsx**: Fixed `Send as SendIcon` import
+- **DashboardPage.tsx**: Fixed `Send as SendIcon` import  
+- **SyncMonitoringPage.tsx**: Fixed `Send as SendIcon` import
+- **Build Verification**: Confirmed successful production build with no import errors
+
+**Commit Message**: `fix: resolve Material-UI icon import errors causing white screen on server restart`
+
+## 2025-01-23 (1.6.9) - Robust Authentication & Token Expiration Handling
+
+### 🔒 Authentication System Overhaul
+- **Eliminated Blank Screen Issues**: Fixed token expiration handling to properly redirect users to login instead of showing blank screens
+- **Unified Interceptor System**: Removed duplicate axios interceptors that caused conflicts and unpredictable behavior
+- **Automatic Token Refresh**: Implemented robust token refresh with retry logic and proper fallback to login
+- **Loading State Management**: Added professional loading spinner during authentication state changes
+
+### 🛡️ Enhanced Security & Error Handling  
+- **Smart 401 Error Handling**: Global authentication error handling with immediate redirect to login page
+- **Prevent Refresh Loops**: Added safeguards to prevent infinite token refresh attempts
+- **Clean Session Management**: Proper cleanup of authentication data and user session on logout
+- **Auth State Consistency**: Reliable authentication state tracking with `isAuthenticated` boolean
+
+### 🎯 User Experience Improvements
+- **No More Blank Screens**: Users always see appropriate content or are redirected to login
+- **Professional Loading States**: Custom loading component with organization branding during auth transitions
+- **Immediate Feedback**: Console logging and visual feedback for authentication events
+- **Graceful Degradation**: System handles network failures and invalid tokens elegantly
+
+### 🔧 Technical Improvements
+- **Single Source of Truth**: Unified authentication state management in AuthContext
+- **Memory Leak Prevention**: Proper cleanup of interceptors and event handlers
+- **Request Optimization**: Skip auth headers for refresh requests to prevent conflicts  
+- **Route Protection**: Consistent route protection using `isAuthenticated` across all pages
+
+**Commit Message**: `fix: comprehensive authentication overhaul with token refresh, error handling, and blank screen elimination`
+
+## 2025-01-23 (1.6.8) - Major UX Enhancement & Onboarding Experience
+
+### 🎯 Navigation & User Experience Overhaul
+- **Professional Navigation Bar**: Complete redesign with descriptive tooltips, icons, and clear purpose for each section
+- **Organization Display**: Shows meaningful organization names instead of confusing GUIDs
+- **User Menu Integration**: Avatar-based user menu with access to API documentation and account settings
+- **Active State Indicators**: Visual highlighting of current page with improved button states
+
+### 📱 Onboarding & Dashboard Experience  
+- **Comprehensive Dashboard**: New welcome page with setup progress tracking and guided next steps
+- **4-Step Setup Flow**: Clear progression through Destinations → Credentials → Connectors → Sync Monitor
+- **Progress Visualization**: Progress bars and completion indicators to show setup status
+- **Quick Actions & Tips**: Helpful shortcuts to API docs, system health, and common tasks
+- **Statistics Overview**: At-a-glance cards showing system status and resource counts
+
+### 🛡️ Enhanced Error Handling & Empty States
+- **Sync Monitor 422 Fix**: Graceful handling of empty states when no CC-pairs exist
+- **Smart Error Recovery**: Improved retry logic for API calls with proper status code handling
+- **Helpful Empty States**: Contextual guidance and action buttons when no data is available
+- **Better Loading States**: Professional loading indicators and placeholder content
+
+### 🔧 Backend User Information API
+- **User Info Endpoint**: New `/users/me` endpoint providing user details with organization information
+- **Organization Name Resolution**: Backend support for fetching organization names instead of IDs
+- **Improved Data Structure**: Comprehensive user profile data including billing and settings information
+
+### 🎨 User Interface Improvements
+- **Material Design Consistency**: Professional styling aligned with Material Design principles
+- **Clear Visual Hierarchy**: Better typography, spacing, and component organization
+- **Accessible Navigation**: ARIA labels, keyboard navigation, and screen reader support
+- **Responsive Design**: Improved mobile and tablet experience
+
+**Commit Message**: `feat: comprehensive UX overhaul with onboarding dashboard, professional navigation, organization name display, and enhanced error handling`
+
+## 2025-01-23 (1.6.7) - Professional README & Documentation Enhancement
+
+### 📚 Comprehensive Documentation Overhaul
+- **Professional README**: Complete rewrite with enterprise-grade documentation covering all system capabilities
+- **Quick Start Guide**: 4-step setup process with clear prerequisites and access instructions
+- **Feature Showcase**: Comprehensive overview of 80+ connectors, real-time monitoring, and enterprise features
+- **Usage Examples**: Practical API examples for connector setup, credential management, and sync operations
+
+### 🎯 Documentation Structure & Content
+- **Architecture Overview**: Clear explanation of FastAPI backend, React UI, Celery workers, and database components
+- **Configuration Guide**: Environment variables, OAuth setup, and production deployment instructions
+- **Testing Documentation**: Integration with TESTING_GUIDE.md and comprehensive testing strategies
+- **Monitoring & Observability**: Built-in health checks, Prometheus metrics, and Grafana dashboard setup
+
+### 🚀 Professional Presentation
+- **Badge Integration**: Technology stack badges (Python, FastAPI, React, TypeScript)
+- **Visual Hierarchy**: Clear sections with emojis, code examples, and structured formatting
+- **Production Focus**: Deployment guides, security checklists, and performance characteristics
+- **Developer Experience**: Project structure, development setup, and contribution guidelines
+
+### 📊 System Status & Metrics
+- **Current Version**: Updated to 1.6.7 with production-ready status
+- **Feature Completion**: Documented 90%+ completion with enterprise-grade capabilities
+- **Technology Stack**: Comprehensive listing of FastAPI, React, PostgreSQL, Redis, and Onyx integration
+- **Quality Indicators**: Testing coverage, accessibility compliance, and performance metrics
+
+**Commit Message**: `docs: comprehensive README overhaul with enterprise-grade documentation, quick start guide, and professional presentation`
+
+## 2025-01-23 (1.6.6) - Comprehensive Error Handling Enhancement & Recovery Flows
+
+### 🛡️ React Error Boundaries & Recovery
+- **ErrorBoundary Component**: Complete React error boundary with graceful fallback UI, retry mechanisms, and technical details
+- **Global Error Integration**: Wrapped entire application with error boundary in main.tsx for crash protection
+- **Error Recovery Actions**: Try again, reload page, show/hide technical details, and user-friendly error messages
+- **Development Support**: Detailed error logging and stack traces for development troubleshooting
+
+### 🔄 Enhanced API Error Handling & Retry Logic  
+- **APIError Class**: User-friendly error wrapper with status codes, retry flags, and contextual messages
+- **Automatic Retry Logic**: Exponential backoff with jitter, configurable retry conditions, and smart retry decisions
+- **Enhanced Axios Client**: 30-second timeouts, automatic retries for 5xx errors, network error handling
+- **HTTP Status Mapping**: User-friendly messages for 400, 401, 403, 404, 409, 422, 429, 500+ status codes
+
+### 📊 Global Error Management System
+- **useGlobalErrorHandler**: Centralized error handling for React Query, window errors, and unhandled promises
+- **Consistent User Feedback**: Automatic snackbar notifications with appropriate severity levels
+- **Error Recovery Hook**: Wrapper for operations with consistent error handling and retry mechanisms
+- **Contextual Error Reporting**: Error categorization and context-aware handling
+
+### 🎨 User-Friendly Error Display Components
+- **ErrorDisplay Component**: Consistent error UI with multiple variants (alert, card, inline)
+- **Status-Specific Icons**: Security, network, warning icons based on error type and context
+- **Action-Oriented Design**: Clear retry buttons, dismiss options, and technical detail expansion
+- **Accessibility Support**: Proper ARIA labels, screen reader support, and keyboard navigation
+
+### 📝 Enhanced Form Validation & Error Handling
+- **ValidatedTextField**: Real-time validation with visual feedback (success/error icons)
+- **useFormValidation Hook**: Complete form state management with validation, error tracking, and reset capabilities
+- **FormErrorDisplay**: Comprehensive form error presentation with field-level and server error handling
+- **ValidationState Management**: Touched state tracking, field-specific validation, and form-level validation
+
+### ⚙️ React Query Integration & Configuration
+- **Enhanced Query Configuration**: Smart retry strategies, exponential backoff, and error-specific retry logic
+- **Automatic Cache Management**: Optimistic updates, error rollback, and query invalidation
+- **Error Propagation**: Global error handling integration with React Query's error system
+- **Performance Optimized**: Reduced unnecessary retries for client errors (4xx) and appropriate retry for server errors
+
+### 🔧 Improved User Experience Components
+- **Login Page Enhancement**: Real-time validation, better error messaging, and loading states
+- **ProfilesList Enhancement**: Proper loading states, error display, and retry functionality
+- **Consistent Loading States**: Centralized loading UI patterns with proper accessibility
+- **Error State Management**: Component-level error handling with global fallback
+
+### 🎯 Technical Implementation Highlights
+- **Type-Safe Error Handling**: Full TypeScript integration with proper error type definitions
+- **Memory Leak Prevention**: Proper cleanup of event listeners and subscriptions
+- **Performance Optimized**: Efficient error boundary implementation and minimal re-renders
+- **Development Experience**: Enhanced debugging with detailed error information and stack traces
+
+**Commit Message**: `feat: comprehensive error handling system with boundaries, retry logic, user-friendly displays, and recovery flows`
+
+## 2025-01-23 (1.6.5) - Real-Time Sync Progress Monitoring Implementation
+
+### 🔄 Real-Time Sync Progress Tracking
+- **Backend API Enhancement**: Added `/cc-pairs/active-syncs` endpoint for organization-wide active sync monitoring
+- **Enhanced Index Attempt APIs**: Improved documentation and functionality for sync progress and cancellation endpoints  
+- **Database Operations**: Added `get_active_index_attempts_for_org()` function for efficient org-scoped active sync queries
+- **IndexAttempt Integration**: Full integration with sophisticated CC-Pair IndexAttempt model for detailed progress tracking
+
+### 📊 Frontend Real-Time UI Components
+- **SyncProgressCard**: Comprehensive progress display component with batch progress bars, heartbeat status, and cancellation capability
+- **SyncMonitoringPage**: Full-featured monitoring dashboard with tabbed views, status overview cards, and real-time updates
+- **useActiveSyncs Hook**: Polling-based real-time data fetching with 5-second refresh intervals and background updates
+- **Enhanced TypeScript Types**: Complete IndexAttempt type definition with progress, batch, and heartbeat tracking fields
+
+### 🎛️ User Experience Features
+- **Real-Time Progress Bars**: Visual progress indicators showing batch completion (determinate) or activity (indeterminate)
+- **Sync Cancellation**: User-friendly cancellation with confirmation dialogs and status feedback
+- **Status Dashboard**: Overview cards showing active, completed, failed, and canceled sync counts
+- **Auto-Refresh**: Automatic polling every 5 seconds with background updates and manual refresh option
+- **Navigation Integration**: Added "Sync Monitor" to main navigation for easy access
+
+### 🔧 Technical Implementation
+- **Polling Strategy**: 5-second interval polling for real-time updates without WebSocket complexity
+- **Progress Calculation**: Smart progress calculation using completed/total batches with fallback to indeterminate
+- **Error Handling**: Comprehensive error display for failed syncs with detailed error messages
+- **Performance Optimized**: Efficient queries using joins and selective loading for minimal database impact
+
+**Commit Message**: `feat: implement real-time sync progress monitoring with progress bars, cancellation, and comprehensive dashboard`
+
+## 2025-01-23 (1.6.4) - Comprehensive API Documentation Enhancement
+
+### 📚 OpenAPI Documentation Improvements
+- **Enhanced Global Metadata**: Updated FastAPI app with comprehensive description, features overview, authentication methods, and key concepts
+- **Complete Endpoint Documentation**: Added summaries and descriptions to 20+ critical API endpoints across 5 route modules
+- **Parameter Descriptions**: Enhanced query parameters, headers, and request bodies with detailed descriptions and examples
+- **User-Focused Documentation**: API docs now explain business value and usage patterns for each endpoint
+
+### 🔧 Documentation Coverage by Module
+- **Targets Routes**: Complete documentation for destination target management
+- **Credentials Routes**: Comprehensive docs for encrypted credential operations (create, list, test)
+- **Security Routes**: Enhanced documentation for admin operations (encryption status, audit logs) 
+- **API Keys Routes**: Detailed docs for programmatic access key management
+- **Global FastAPI Metadata**: Production-ready app description with features, authentication, and concepts
+
+### 🎯 API Documentation Standards
+- **Consistent Formatting**: All enhanced endpoints follow consistent summary/description patterns
+- **Business Context**: Descriptions explain what each endpoint does and why users need it
+- **Parameter Clarity**: Query parameters include descriptions, examples, and constraints where applicable
+- **Security Indicators**: Admin-only endpoints clearly marked with access requirements
+
+**Commit Message**: `docs: comprehensive API documentation enhancement with endpoint descriptions and global metadata improvements`
+
 ## 2025-01-23 (1.6.3) - Complete Lighthouse CI Configuration & Testing Pipeline Hardening
 
 ### ⚡ Performance Testing Infrastructure

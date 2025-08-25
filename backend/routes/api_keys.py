@@ -29,7 +29,14 @@ class ApiKeyUpdateRequest(BaseModel):
     role: UserRole | None = None
 
 
-@router.get("/", response_model=list[ApiKeyDescriptor])
+@router.get(
+    "/", 
+    response_model=list[ApiKeyDescriptor],
+    summary="List API keys",
+    description="Retrieve all API keys for the current organization. "
+                "API keys provide programmatic access to the Integration Server API "
+                "and can be assigned different roles (BASIC, ADMIN) for access control."
+)
 def list_api_keys(
     current_user: User = Depends(get_current_user),
     current_org_id: str = Depends(get_current_org_id),
@@ -40,7 +47,14 @@ def list_api_keys(
     return fetch_api_keys(db)
 
 
-@router.post("/", response_model=ApiKeyDescriptor)
+@router.post(
+    "/", 
+    response_model=ApiKeyDescriptor,
+    summary="Create API key",
+    description="Create a new API key for programmatic access. "
+                "Specify a name for identification and role for access control. "
+                "The API key value is returned only once - store it securely."
+)
 def create_api_key(
     request: ApiKeyRequest,
     current_user: User = Depends(get_current_user),

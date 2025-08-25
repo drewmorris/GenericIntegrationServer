@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">88.61% </span>
+                <span class="strong">88% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>218/246</span>
+                <span class='fraction'>220/250</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.28% </span>
+                <span class="strong">11.76% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/28</span>
+                <span class='fraction'>4/34</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">88.61% </span>
+                <span class="strong">88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>218/246</span>
+                <span class='fraction'>220/250</span>
             </div>
         
             
@@ -403,14 +403,7 @@
 <a name='L338'></a><a href='#L338'>338</a>
 <a name='L339'></a><a href='#L339'>339</a>
 <a name='L340'></a><a href='#L340'>340</a>
-<a name='L341'></a><a href='#L341'>341</a>
-<a name='L342'></a><a href='#L342'>342</a>
-<a name='L343'></a><a href='#L343'>343</a>
-<a name='L344'></a><a href='#L344'>344</a>
-<a name='L345'></a><a href='#L345'>345</a>
-<a name='L346'></a><a href='#L346'>346</a>
-<a name='L347'></a><a href='#L347'>347</a>
-<a name='L348'></a><a href='#L348'>348</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L341'></a><a href='#L341'>341</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -450,19 +443,8 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -704,12 +686,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
@@ -719,11 +696,20 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -795,24 +781,13 @@ import { formatDistanceToNow } from 'date-fns';
 import type React from 'react';
 import { useState } from 'react';
 import { getDestinationLogo } from '../../assets/connector-logos';
+import { DestinationTarget } from '../../hooks/useDestinations';
 &nbsp;
 // Constants
 const ERROR_COLOR = 'error.main';
 &nbsp;
 type DestinationCardProps = {
-  destination: {
-    id: string;
-    name: string;
-    displayName?: string;
-    status: 'active' | 'inactive' | 'error';
-    config: Record&lt;string, any&gt;;
-    createdAt: string;
-    updatedAt: string;
-    lastSync?: string;
-    syncCount?: number;
-    errorCount?: number;
-    connectorCount?: number;
-  };
+  destination: DestinationTarget;
   onHealthCheck: () =&gt; void;
   onEdit: () =&gt; void;
   onDelete: () =&gt; void;
@@ -1049,7 +1024,9 @@ export const DestinationCard: React.FC&lt;DestinationCardProps&gt; = ({
           &lt;Typography variant="caption" color="text.secondary"&gt;
             {destination.<span class="branch-0 cbranch-no" title="branch not covered" >lastSync</span>
 <span class="cstat-no" title="statement not covered" >              ? `Last sync ${formatDistanceToNow(new Date(destination.lastSync), { addSuffix: true })}`</span>
-              : `Created ${formatDistanceToNow(new Date(destination.createdAt), { addSuffix: true })}`}
+              : destination.<span class="branch-0 cbranch-no" title="branch not covered" >createdAt || destination.created_at</span>
+                ? `Created ${formatDistanceToNow(new Date(destination.<span class="branch-0 cbranch-no" title="branch not covered" >createdAt || destination.created_at!)</span>, { addSuffix: true })<span class="branch-0 cbranch-no" title="branch not covered" >}`</span>
+<span class="cstat-no" title="statement not covered" >                : 'Creation date unknown'}</span>
           &lt;/Typography&gt;
         &lt;/Box&gt;
       &lt;/CardContent&gt;
@@ -1070,7 +1047,9 @@ export const DestinationCard: React.FC&lt;DestinationCardProps&gt; = ({
         &lt;Box flex={1} /&gt;
 &nbsp;
         &lt;Typography variant="caption" color="text.secondary"&gt;
-          Updated {formatDistanceToNow(new Date(destination.updatedAt), { addSuffix: true })}
+          {destination.<span class="branch-0 cbranch-no" title="branch not covered" >updatedAt || destination.updated_at</span>
+            ? `Updated ${formatDistanceToNow(new Date(destination.<span class="branch-0 cbranch-no" title="branch not covered" >updatedAt || destination.updated_at!)</span>, { addSuffix: true })<span class="branch-0 cbranch-no" title="branch not covered" >}`</span>
+<span class="cstat-no" title="statement not covered" >            : 'Update date unknown'}</span>
         &lt;/Typography&gt;
       &lt;/CardActions&gt;
 &nbsp;
@@ -1111,7 +1090,7 @@ export const DestinationCard: React.FC&lt;DestinationCardProps&gt; = ({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-24T16:18:06.954Z
+                at 2025-08-25T00:15:35.745Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

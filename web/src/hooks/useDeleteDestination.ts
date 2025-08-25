@@ -5,15 +5,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
-const deleteDestination = async (destinationId: string): Promise<void> => {
-  await api.delete(`/destinations/${destinationId}`);
+const deleteDestinationTarget = async (destinationId: string): Promise<void> => {
+  await api.delete(`/targets/${destinationId}`);
 };
 
 export const useDeleteDestination = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteDestination,
+    mutationFn: deleteDestinationTarget,
     onSuccess: (_, destinationId) => {
       // Remove from destinations cache
       queryClient.setQueryData(['destinations'], (old: Array<{ id: string }> | undefined) => {
@@ -22,11 +22,11 @@ export const useDeleteDestination = () => {
 
       // Invalidate related queries
       void queryClient.invalidateQueries({ queryKey: ['destinations'] });
-      void queryClient.invalidateQueries({ queryKey: ['destination-health'] });
-      void queryClient.invalidateQueries({ queryKey: ['destination-metrics'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['sync-monitor-stats'] });
     },
     onError: (error) => {
-      console.error('Failed to delete destination:', error);
+      console.error('Failed to delete destination target:', error);
     },
   });
 };

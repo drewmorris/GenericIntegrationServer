@@ -43,6 +43,9 @@ export default function TopNav() {
         <Button color="inherit" onClick={() => navigate('/destinations')} sx={{ mr: 1 }}>
           Destinations
         </Button>
+        <Button color="inherit" onClick={() => navigate('/sync-monitoring')} sx={{ mr: 1 }}>
+          Sync Monitor
+        </Button>
         <Button color="inherit" onClick={handleLogout}>
           Logout
         </Button>

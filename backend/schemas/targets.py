@@ -10,8 +10,12 @@ class DestinationTargetBase(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 class DestinationTargetCreate(DestinationTargetBase):
-    organization_id: uuid.UUID
-    user_id: uuid.UUID
+    # organization_id and user_id are extracted from JWT token, not from request body
+    pass
+
+class DestinationTargetUpdate(BaseModel):
+    display_name: Optional[str] = None
+    config: Optional[dict[str, Any]] = None
 
 class DestinationTargetOut(DestinationTargetBase):
     id: uuid.UUID

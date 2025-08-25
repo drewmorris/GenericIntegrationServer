@@ -52,10 +52,16 @@ class KeyRotationResponse(BaseModel):
 	instructions: str
 
 
-@router.get("/encryption/status", response_model=EncryptionStatus)
+@router.get(
+	"/encryption/status", 
+	response_model=EncryptionStatus,
+	summary="Get encryption status",
+	description="Retrieve the current status of the encryption system including key version, "
+				"credentials needing rotation, and overall encryption health. Requires admin access."
+)
 async def get_encryption_status(
 	db: AsyncSession = Depends(get_db),
-	x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret")
+	x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret", description="Admin secret for privileged operations")
 ) -> EncryptionStatus:
 	"""Get the current encryption system status."""
 	admin_key = os.getenv("ADMIN_API_KEY")
@@ -186,12 +192,19 @@ async def rotate_all_credentials(
 		raise HTTPException(status_code=500, detail="Bulk rotation failed")
 
 
-@router.get("/audit/credentials", response_model=List[AuditLogEntry])
+@router.get(
+	"/audit/credentials", 
+	response_model=List[AuditLogEntry],
+	summary="Get credential audit logs",
+	description="Retrieve audit logs for credential operations with optional filtering. "
+				"Shows who accessed, modified, or tested credentials with timestamps and IP addresses. "
+				"Essential for security compliance and troubleshooting."
+)
 async def get_credential_audit_logs(
 	db: AsyncSession = Depends(get_db),
-	credential_id: Optional[uuid.UUID] = Query(default=None),
-	organization_id: Optional[uuid.UUID] = Query(default=None),
-	action: Optional[str] = Query(default=None),
+	credential_id: Optional[uuid.UUID] = Query(default=None, description="Filter by specific credential ID"),
+	organization_id: Optional[uuid.UUID] = Query(default=None, description="Filter by organization"),
+	action: Optional[str] = Query(default=None, description="Filter by action type (access, modify, test, etc.)"),
 	result: Optional[str] = Query(default=None),
 	limit: int = Query(default=100, le=1000),
 	offset: int = Query(default=0, ge=0),

@@ -44,13 +44,20 @@ class CredentialOut(BaseModel):
 
 	model_config = {"from_attributes": True}
 
-@router.get("/", response_model=List[CredentialOut])
+@router.get(
+    "/", 
+    response_model=List[CredentialOut],
+    summary="List credentials",
+    description="Retrieve all credentials for the current organization with optional filtering. "
+                "Credentials store authentication information for connectors (OAuth tokens, API keys, etc.). "
+                "Filter by user, connector type, or status to narrow results."
+)
 async def list_credentials(
 	db: AsyncSession = Depends(get_db),
 	current_org_id: str = Depends(get_current_org_id),
-	user_id: Optional[uuid.UUID] = Query(default=None),
-	connector_name: Optional[str] = Query(default=None),
-	status: Optional[str] = Query(default=None),
+	user_id: Optional[uuid.UUID] = Query(default=None, description="Filter by user ID"),
+	connector_name: Optional[str] = Query(default=None, description="Filter by connector type (e.g., 'google_drive', 'slack')"),
+	status: Optional[str] = Query(default=None, description="Filter by credential status (active, expired, error)"),
 ) -> list[CredentialOut]:  # Ensure the return type is a list of CredentialOut
 	stmt = select(m.Credential).where(m.Credential.organization_id == current_org_id)
 	if user_id is not None:
@@ -70,7 +77,15 @@ async def list_credentials(
 	})
 	return [CredentialOut.model_validate(row) for row in rows]  # Convert to Pydantic models
 
-@router.post("/", response_model=CredentialOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", 
+    response_model=CredentialOut, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Create credential",
+    description="Create a new encrypted credential for a connector. "
+                "Credentials can be OAuth tokens, API keys, or other authentication data. "
+                "All sensitive data is encrypted before storage and audit logged."
+)
 async def create_credential(
 	request: Request,
 	payload: CredentialCreate,
@@ -258,7 +273,14 @@ class CredentialTestResult(BaseModel):
 	detail: Optional[str] = None
 	needs_refresh: bool = False
 
-@router.post("/{cred_id}/test", response_model=CredentialTestResult)
+@router.post(
+    "/{cred_id}/test", 
+    response_model=CredentialTestResult,
+    summary="Test credential",
+    description="Test a credential by attempting to authenticate with the target service. "
+                "Returns success/failure status and detailed error information if authentication fails. "
+                "Automatically marks credentials as expired if authentication consistently fails."
+)
 async def test_credential(
 	request: Request,
 	cred_id: uuid.UUID, 

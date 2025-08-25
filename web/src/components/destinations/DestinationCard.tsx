@@ -36,24 +36,13 @@ import { formatDistanceToNow } from 'date-fns';
 import type React from 'react';
 import { useState } from 'react';
 import { getDestinationLogo } from '../../assets/connector-logos';
+import { DestinationTarget } from '../../hooks/useDestinations';
 
 // Constants
 const ERROR_COLOR = 'error.main';
 
 type DestinationCardProps = {
-  destination: {
-    id: string;
-    name: string;
-    displayName?: string;
-    status: 'active' | 'inactive' | 'error';
-    config: Record<string, any>;
-    createdAt: string;
-    updatedAt: string;
-    lastSync?: string;
-    syncCount?: number;
-    errorCount?: number;
-    connectorCount?: number;
-  };
+  destination: DestinationTarget;
   onHealthCheck: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -290,7 +279,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
           <Typography variant="caption" color="text.secondary">
             {destination.lastSync
               ? `Last sync ${formatDistanceToNow(new Date(destination.lastSync), { addSuffix: true })}`
-              : `Created ${formatDistanceToNow(new Date(destination.createdAt), { addSuffix: true })}`}
+              : destination.createdAt || destination.created_at
+                ? `Created ${formatDistanceToNow(new Date(destination.createdAt || destination.created_at!), { addSuffix: true })}`
+                : 'Creation date unknown'}
           </Typography>
         </Box>
       </CardContent>
@@ -311,7 +302,9 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({
         <Box flex={1} />
 
         <Typography variant="caption" color="text.secondary">
-          Updated {formatDistanceToNow(new Date(destination.updatedAt), { addSuffix: true })}
+          {destination.updatedAt || destination.updated_at
+            ? `Updated ${formatDistanceToNow(new Date(destination.updatedAt || destination.updated_at!), { addSuffix: true })}`
+            : 'Update date unknown'}
         </Typography>
       </CardActions>
 

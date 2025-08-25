@@ -52,7 +52,7 @@ export const DestinationManagement: React.FC = () => {
     const filtered = destinations.filter((dest) => {
       const matchesSearch =
         dest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dest.displayName?.toLowerCase().includes(searchTerm.toLowerCase());
+        (dest.displayName || dest.display_name)?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesFilter = filterType === 'all' || dest.status === filterType;
 
@@ -63,16 +63,22 @@ export const DestinationManagement: React.FC = () => {
     filtered.sort((a, b) => {
       switch (sortType) {
         case 'name': {
-          return (a.displayName || a.name).localeCompare(b.displayName || b.name);
+          return (a.displayName || a.display_name || a.name).localeCompare(
+            b.displayName || b.display_name || b.name,
+          );
         }
         case 'status': {
-          return a.status.localeCompare(b.status);
+          return (a.status || 'inactive').localeCompare(b.status || 'inactive');
         }
         case 'created': {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          const aDate = a.createdAt || a.created_at || new Date().toISOString();
+          const bDate = b.createdAt || b.created_at || new Date().toISOString();
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
         }
         case 'updated': {
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          const aDate = a.updatedAt || a.updated_at || new Date().toISOString();
+          const bDate = b.updatedAt || b.updated_at || new Date().toISOString();
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
         }
         default: {
           return 0;
@@ -108,7 +114,8 @@ export const DestinationManagement: React.FC = () => {
   const getStatusCounts = () => {
     const counts = destinations.reduce(
       (acc, dest) => {
-        acc[dest.status] = (acc[dest.status] || 0) + 1;
+        const status = dest.status || 'inactive';
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>,

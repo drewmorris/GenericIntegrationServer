@@ -40,7 +40,7 @@ import {
 import type React from 'react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useTestDestination } from '../../hooks/useTestDestination';
-import { useUpdateDestination } from '../../hooks/useUpdateDestination';
+import { useUpdateDestinationTarget } from '../../hooks/useUpdateDestination';
 
 // Validation helper functions
 const validateField = (
@@ -179,7 +179,7 @@ export const DestinationEditDialog: React.FC<DestinationEditDialogProps> = ({
   const retrySettingsHeaderId = useId();
   const batchSettingsHeaderId = useId();
 
-  const { mutateAsync: updateDestination, isPending: isSaving } = useUpdateDestination();
+  const { mutateAsync: updateDestination, isPending: isSaving } = useUpdateDestinationTarget();
   const { mutateAsync: testDestination } = useTestDestination();
 
   const schema = destinationSchemas[destination.name] || [];

@@ -1,69 +1,49 @@
 /**
- * Hook for updating destinations
- * Handles destination configuration updates with optimistic updates
+ * Hook for updating destination targets
+ * Handles destination target configuration updates with optimistic updates
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { DestinationTarget } from './useDestinations';
 
-export type UpdateDestinationRequest = {
+export type UpdateDestinationTargetRequest = {
   id: string;
-  config: Record<string, any>;
-  displayName?: string;
+  config?: Record<string, any>;
+  display_name?: string;
 };
 
-export type Destination = {
-  id: string;
-  name: string;
-  displayName?: string;
-  config: Record<string, any>;
-  status: 'active' | 'inactive' | 'error';
-  createdAt: string;
-  updatedAt: string;
-};
-
-const updateDestination = async (data: UpdateDestinationRequest): Promise<Destination> => {
-  const response = await api.put(`/destinations/${data.id}`, {
+const updateDestinationTarget = async (
+  data: UpdateDestinationTargetRequest,
+): Promise<DestinationTarget> => {
+  const response = await api.put(`/targets/${data.id}`, {
     config: data.config,
-    displayName: data.displayName,
+    display_name: data.display_name,
   });
-  return response.data as Destination;
+  return response.data as DestinationTarget;
 };
 
-export const useUpdateDestination = () => {
+export const useUpdateDestinationTarget = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateDestination,
-    onMutate: async (variables) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['destinations'] });
-
-      // Snapshot the previous value
-      const previousDestinations = queryClient.getQueryData(['destinations']);
-
-      // Optimistically update
-      queryClient.setQueryData(['destinations'], (old: Destination[] | undefined) => {
+    mutationFn: updateDestinationTarget,
+    onSuccess: (updatedTarget) => {
+      // Update the destinations cache with the updated target
+      queryClient.setQueryData(['destinations'], (old: DestinationTarget[] | undefined) => {
         return old
-          ? old.map((dest) =>
-              dest.id === variables.id
-                ? { ...dest, config: variables.config, updatedAt: new Date().toISOString() }
-                : dest,
-            )
-          : [];
+          ? old.map((dest) => (dest.id === updatedTarget.id ? updatedTarget : dest))
+          : [updatedTarget];
       });
 
-      return { previousDestinations };
-    },
-    onError: (error, _variables, context) => {
-      // Rollback on error
-      if (context?.previousDestinations) {
-        queryClient.setQueryData(['destinations'], context.previousDestinations);
-      }
-      console.error('Failed to update destination:', error);
-    },
-    onSettled: () => {
-      // Always refetch after error or success
+      // Invalidate related queries
       void queryClient.invalidateQueries({ queryKey: ['destinations'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (error) => {
+      console.error('Failed to update destination target:', error);
     },
   });
 };
+
+// Export alias for backwards compatibility
+export { useUpdateDestinationTarget as useUpdateDestination };

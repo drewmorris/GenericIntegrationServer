@@ -19,6 +19,7 @@ from backend.routes import migration as migration_router
 from backend.routes import health as health_router
 from backend.routes import metrics as metrics_router
 from backend.routes import alerts as alerts_router
+from backend.routes import users as users_router
 from backend.logging import configure_logging
 from backend.db.startup import initialize_database
 
@@ -32,12 +33,37 @@ async def lifespan(app: FastAPI):
     # Shutdown (if needed)
 
 app = FastAPI(
-    title="Integration Server",
-    version="0.1.0",
-    description="Multi-tenant integration server that syncs documents from various sources to destinations like CleverBrag and Onyx.",
-    terms_of_service="https://example.com/terms",
-    contact={"name": "Dev Team", "email": "dev@example.com"},
-    license_info={"name": "MIT"},
+    title="Generic Integration Server",
+    version="1.6.3",
+    description="""
+    **Multi-tenant Integration Server** for syncing data from 80+ connectors to multiple destinations.
+    
+    ## Features
+    
+    * **83+ Connectors**: Google Drive, Slack, Confluence, GitHub, and more
+    * **Multi-tenant**: Organization-based isolation with Row-Level Security  
+    * **Flexible Destinations**: CleverBrag, Onyx, CSV, and extensible plugin system
+    * **Advanced Security**: Encrypted credentials, API keys, audit logging
+    * **Real-time Monitoring**: Prometheus metrics, Grafana dashboards, intelligent alerting
+    * **CC-Pair Architecture**: Flexible connector-credential pairing for enterprise deployments
+    
+    ## Authentication
+    
+    This API supports two authentication methods:
+    * **JWT Bearer Tokens**: For web applications (obtain via `/auth/login`)
+    * **API Keys**: For programmatic access (create via `/api-keys/`)
+    
+    ## Key Concepts
+    
+    * **Connectors**: Reusable configurations for data sources (Google Drive, Slack, etc.)
+    * **Credentials**: Encrypted authentication data (OAuth tokens, API keys)
+    * **CC-Pairs**: Connector-Credential Pairs that define sync relationships  
+    * **Destinations**: Target systems where synced data is sent
+    * **Index Attempts**: Detailed sync operation tracking with progress monitoring
+    """,
+    terms_of_service="https://github.com/your-org/integration-server/blob/main/TERMS.md",
+    contact={"name": "Integration Server Team", "email": "support@yourcompany.com", "url": "https://github.com/your-org/integration-server"},
+    license_info={"name": "MIT", "url": "https://github.com/your-org/integration-server/blob/main/LICENSE"},
     lifespan=lifespan,
 )
 
@@ -72,6 +98,7 @@ app.include_router(migration_router.router)
 app.include_router(health_router.router)
 app.include_router(metrics_router.router)
 app.include_router(alerts_router.router)
+app.include_router(users_router.router)
 
 
 @app.get("/health", tags=["Health"])
