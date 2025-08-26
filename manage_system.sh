@@ -40,12 +40,27 @@ error() {
 
 # Function to check if a port is in use
 port_in_use() {
-    lsof -i :$1 >/dev/null 2>&1
+    # Try multiple methods since lsof may not be available
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -i :$1 >/dev/null 2>&1
+    elif command -v netstat >/dev/null 2>&1; then
+        netstat -tlnp 2>/dev/null | grep ":$1 " >/dev/null
+    elif command -v ss >/dev/null 2>&1; then
+        ss -tlnp 2>/dev/null | grep ":$1 " >/dev/null
+    else
+        # Fallback: try to connect to the port
+        timeout 1 bash -c "</dev/tcp/localhost/$1" >/dev/null 2>&1
+    fi
 }
 
 # Function to get PID using a port
 get_pid_by_port() {
-    lsof -ti :$1 2>/dev/null || echo ""
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -ti :$1 2>/dev/null || echo ""
+    else
+        # Try to find PID via proc filesystem or ps
+        ps aux | grep -E ":$1\b" | grep -v grep | awk '{print $2}' | head -1 || echo ""
+    fi
 }
 
 # Function to kill processes gracefully
@@ -115,6 +130,8 @@ stop_services() {
     # Clean up any remaining processes
     pkill -f "uvicorn.*backend.main" 2>/dev/null || true
     pkill -f "vite.*--port.*$FRONTEND_PORT" 2>/dev/null || true
+    pkill -f "node.*vite" 2>/dev/null || true
+    pkill -f "esbuild.*--service" 2>/dev/null || true
     
     success "All services stopped"
 }
@@ -193,44 +210,26 @@ start_services() {
         return 1
     fi
     
-    # Start core services (Docker containers)
+    # Start core services (Docker containers) directly
     log "1️⃣ Setting up core services..."
-    if ! ./start_system.sh >/dev/null 2>&1; then
-        # Extract just the core service setup part
-        log "Setting up Docker access..."
-        
-        # Ensure Docker socket is accessible
-        if [ -e /var/run/docker.sock ]; then
-            sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
-        fi
-        
-        log "Starting core services..."
-        docker-compose up -d postgres redis || {
-            error "Failed to start core services"
-            return 1
-        }
-        
-        # Wait for PostgreSQL
-        log "⏳ Waiting for Postgres to be ready"
-        for i in {1..30}; do
-            if docker exec integration_server_postgres pg_isready -U postgres >/dev/null 2>&1; then
-                break
-            fi
-            sleep 1
-        done
-        
-        # Run migrations
-        poetry run alembic upgrade head || {
-            error "Failed to run database migrations"
-            return 1
-        }
+    log "Setting up Docker access..."
+    
+    # Ensure Docker socket is accessible
+    if [ -e /var/run/docker.sock ]; then
+        sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
     fi
+    
+    log "Starting core services..."
+    bash bin/start_core_services.sh || {
+        error "Failed to start core services"
+        return 1
+    }
     
     success "Core services ready"
     
     # Start backend server
     log "2️⃣ Starting backend server..."
-    poetry run uvicorn backend.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT \
+    (cd backend && PYTHONPATH=/workspaces/GenericIntegrationServer poetry run uvicorn backend.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT) \
         > "$BACKEND_LOG" 2>&1 &
     echo $! > "$BACKEND_PID_FILE"
     

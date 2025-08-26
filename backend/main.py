@@ -20,7 +20,7 @@ from backend.routes import health as health_router
 from backend.routes import metrics as metrics_router
 from backend.routes import alerts as alerts_router
 from backend.routes import users as users_router
-from backend.logging import configure_logging
+from backend.log_config import configure_logging
 from backend.db.startup import initialize_database
 
 

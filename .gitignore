@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 
+# Virtual environments
+.venv/
+venv/
+.env
+
 # control pid files
 *.pid
 
@@ -19,12 +24,23 @@ web/node_modules/
 web/dist/
 /web/node_modules/
 node_modules/
+
+# Coverage reports
+coverage/
+web/coverage/
+.coverage
+*.lcov
+lcov.info
 start_system.sh
 LegacyCode/web/public/Meta.svg
 LegacyCode/web/public/Microsoft.svg
 
 # Environment and temporary files
 .core_env
+.system_config
+.system_pids
+.actrc
+.docker_env
 purge-env.ps1
 backend/__pycache__/deps.cpython-311.pyc
 backend/__pycache__/main.cpython-311.pyc

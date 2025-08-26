@@ -1,3 +1,109 @@
+## 2025-01-25 (1.6.19) - Complete Virtual Environment System Overhaul + Git Cleanup
+
+### 🧹 Git Repository Cleanup
+- **Added Coverage Files to .gitignore**: Coverage reports and test artifacts now properly excluded from version control
+- **Removed Tracked Coverage Files**: Removed 100+ coverage files from git tracking while preserving them on disk
+- **Added Environment Config Files to .gitignore**: Environment-specific files (.actrc, .docker_env, .system_config, .system_pids) now properly excluded
+- **Removed Environment Files from Tracking**: Removed .actrc and .docker_env from git tracking as they contain environment-specific configurations
+- **Removed Build Artifacts**: Removed web/dist/index.html from git tracking as it's a generated build artifact
+- **Added .venv to .gitignore**: Virtual environment directories now properly excluded from version control
+- **Prevents Tracking Issues**: Resolves git tracking of platform-specific binaries and cached files in virtual environments
+- **Best Practice Compliance**: Virtual environments, test artifacts, build artifacts, and environment-specific configs should never be committed to repositories
+
+## 2025-01-25 (1.6.19) - Complete Virtual Environment System Overhaul
+
+### 🔄 Complete System Architecture Change
+- **BREAKING CHANGE**: Replaced broken Poetry configuration with proper Python virtual environment
+- **New Initialization**: Created `init_system.sh` for complete system setup including virtual environment
+- **New Startup Process**: Created `start_venv_system.sh` that uses virtual environment instead of Poetry
+- **New Management**: Added `stop_venv_system.sh` and `status_system.sh` for proper system management
+- **Root Cause Fix**: Poetry was configured with `virtualenvs.create = false` causing all dependencies to install to system Python
+- **Dependency Resolution**: Gmail/Google connectors now work properly with boto3 and all required libraries
+
+### 📁 New Scripts & Process
+- `./init_system.sh` - One-time system initialization (creates venv, installs dependencies, sets up database)
+- `./start_venv_system.sh` - Start all services using virtual environment
+- `./stop_venv_system.sh` - Stop all services cleanly  
+- `./status_system.sh` - Check system status and health
+- `.system_config` - Configuration file with paths and settings
+- `.system_pids` - Process ID tracking for clean shutdown
+
+### 🐛 Fixed Issues
+- **boto3 Import Error**: Now properly installed in virtual environment
+- **Google API Dependencies**: All Google connector libraries available
+- **System Python Conflicts**: No longer tries to modify system packages
+- **Permission Errors**: Virtual environment prevents pip permission issues
+- **Module Import Errors**: Proper PYTHONPATH ensures all modules are found
+- **Connector Factory Loading**: All 83+ Onyx connectors now have required dependencies
+
+**MIGRATION**: Old Poetry-based scripts deprecated. Use new virtual environment system for reliable operation.
+
+**COMMIT**: "Complete overhaul: Replace broken Poetry config with proper virtual environment system - Gmail/Google connectors now fully functional"
+
+---
+
+## 2025-01-25 (1.6.18) - Critical Backend Environment & Dependency Fix
+
+### 🔧 Backend Environment & Google Connectors Fix
+- **Fixed Critical Issue**: Backend was not running in Poetry virtual environment, causing "No module named 'boto3'" error
+- **Root Cause**: `manage_system.sh` was calling `start_system.sh` which started backend with system Python instead of Poetry
+- **Solution**: Modified startup script to properly run backend with Poetry and correct PYTHONPATH
+- **Gmail/Google Connectors**: Now work properly with all required dependencies (boto3, google-api-python-client)
+- **Connector Factory**: Fixed module loading that required AWS SDK dependencies for BlobStorageConnector inheritance
+- **Python Module Conflicts**: Renamed `backend/logging.py` to `backend/log_config.py` to avoid conflicts with built-in logging module
+- **All 83+ Connectors**: Now have access to their required Python dependencies through proper Poetry environment
+
+**COMMIT**: "Fix critical backend environment issue - Gmail/Google connectors now work with proper Poetry venv and boto3 dependencies"
+
+---
+
+## 2025-01-24 (1.6.17) - Enhanced Startup/Shutdown Management
+
+### 🔧 Health Check Bug Fix
+- **Fixed Port Detection**: Resolved health check failure due to missing `lsof` command in environment
+- **Enhanced Port Detection**: Added fallback methods using `netstat`, `ss`, and `/dev/tcp` for robust port detection
+- **Improved PID Detection**: Added fallback PID detection via `ps` when `lsof` unavailable
+- **Verified System Status**: Both backend and frontend now correctly detected and reported as healthy
+
+## 2025-01-24 (1.6.17) - Enhanced Startup/Shutdown Management
+
+### 🛠️ Backend Startup Fix
+- **Fixed Critical Backend Error**: Resolved `AssertionError: Status code 204 must not have a response body` in `backend/routes/targets.py` delete endpoint that was preventing server startup
+- **Updated Delete Endpoint**: Removed response type annotation from HTTP 204 endpoint (No Content responses cannot have response bodies)
+
+### 🚀 Bulletproof Service Management
+- **Added Enhanced Management Script**: Created `manage_system.sh` with comprehensive service lifecycle management
+  - Port conflict detection before startup
+  - Health verification with 30-second timeouts  
+  - Graceful shutdown (SIGTERM → SIGKILL escalation)
+  - PID file tracking for reliable process management
+  - Structured logging with separate backend/frontend log files
+- **Added Emergency Shutdown Tool**: Created `kill_servers.sh` for aggressive process cleanup
+  - Multi-pattern process matching (uvicorn, vite, node, esbuild)
+  - Port-based process discovery and termination
+  - Verification of port cleanup
+- **Enhanced Process Cleanup**: Fixed issue with leftover node/vite/esbuild processes causing resource conflicts
+
+### 📊 Service Monitoring & Troubleshooting
+- **Status Monitoring**: `./manage_system.sh status` - Real-time service health checks
+- **Log Management**: `./manage_system.sh logs [backend|frontend]` - Centralized log viewing
+- **Restart Capability**: `./manage_system.sh restart` - Clean service restart with proper shutdown
+- **Health Endpoints**: API and web interface health verification before reporting ready
+
+**Management Commands:**
+```bash
+./manage_system.sh start     # Recommended startup with full health checking
+./manage_system.sh stop      # Graceful shutdown with process verification  
+./manage_system.sh restart   # Clean restart cycle
+./manage_system.sh status    # Service health monitoring
+./manage_system.sh logs      # Centralized log viewing
+./kill_servers.sh           # Emergency process cleanup
+```
+
+*Commit: Enhanced service management with bulletproof startup/shutdown and comprehensive monitoring*
+
+---
+
 ## 2025-01-24 (1.6.16) - Frontend Code Quality & Testing Pipeline Fixes
 
 ### 🔧 Biome Linting Error Resolution 

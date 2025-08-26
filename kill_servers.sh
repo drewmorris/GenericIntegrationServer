@@ -5,6 +5,8 @@ echo "🛑 Force stopping all Integration Server processes..."
 # Kill by process pattern (most aggressive)
 pkill -9 -f "uvicorn.*backend.main" 2>/dev/null || true
 pkill -9 -f "vite.*--port.*5173" 2>/dev/null || true
+pkill -9 -f "node.*vite" 2>/dev/null || true
+pkill -9 -f "esbuild.*--service" 2>/dev/null || true
 
 # Kill by port (backup method)
 for port in 8000 5173; do
