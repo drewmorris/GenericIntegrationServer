@@ -2,6 +2,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
+import pytest
+
 
 def test_file_connector_to_csvdump(client):
 	"""Test file connector to CSV dump integration via API."""

@@ -26,7 +26,8 @@ POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "30"))  # Seconds to wait for co
 POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "3600"))  # Recycle connections every hour
 POOL_PRE_PING = os.getenv("DB_POOL_PRE_PING", "false" if "pytest" in os.getenv("_", "") else "true").lower() == "true"  # Health check connections
 
-DATABASE_URL = (
+# Allow override via DATABASE_URL environment variable (for migrations, tests, etc.)
+DATABASE_URL = os.getenv("DATABASE_URL") or (
     f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 

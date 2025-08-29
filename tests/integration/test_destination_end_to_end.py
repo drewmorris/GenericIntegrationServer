@@ -1,6 +1,8 @@
 import uuid
 import tempfile
 
+import pytest
+
 
 def test_cleverbrag_and_csv_destinations(client):
     """Test end-to-end integration with CleverBrag and CSV destinations via API."""

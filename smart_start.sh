@@ -25,14 +25,14 @@ needs_initialization() {
     fi
     
     # Check for virtual environment
-    if [[ ! -d backend/.venv ]]; then
+    if [[ ! -d .venv ]]; then
         needs_init=true
-        reasons+=("Missing virtual environment (backend/.venv)")
+        reasons+=("Missing virtual environment (.venv)")
     fi
     
     # Check for core dependencies in venv
-    if [[ -d backend/.venv ]]; then
-        if ! backend/.venv/bin/python -c "import boto3, fastapi, uvicorn" 2>/dev/null; then
+    if [[ -d .venv ]]; then
+        if ! .venv/bin/python -c "import boto3, fastapi, uvicorn" 2>/dev/null; then
             needs_init=true
             reasons+=("Missing dependencies in virtual environment")
         fi
@@ -94,36 +94,43 @@ run_initialization() {
         python3 -m venv .venv
     fi
     
-    # Activate and install dependencies using Poetry (like CI does)
-    source .venv/bin/activate
     log "Installing/verifying dependencies using Poetry..."
     poetry install --with dev --no-interaction
+    
+    # Activate virtual environment after Poetry sets it up
+    source .venv/bin/activate
     
     # Step 4: Frontend dependencies (idempotent)
     log "4️⃣ Setting up frontend dependencies..."
     cd web
     if [[ ! -d node_modules ]] || [[ package.json -nt node_modules ]]; then
-        log "Installing frontend dependencies..."
-        npm install --silent
+        log "Installing frontend dependencies with pnpm..."
+        export PATH="$HOME/.local/share/pnpm:$PATH"
+        pnpm install --no-verify-store-integrity
     else
         log "Frontend dependencies up to date"
     fi
     cd ..
     
-    # Step 5: Database migrations (idempotent - Alembic handles this)
+    # Step 5: Database migrations (idempotent - Alembic handles this)  
     log "5️⃣ Running database migrations..."
-    cd backend
+    cd "$ROOT_DIR"
     source .venv/bin/activate
-    source ../.core_env 2>/dev/null || true
+    # Export environment variables for migrations
+    set -a
+    source .core_env
+    set +a
     export DATABASE_URL="postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-integration_server}"
+    # Run Alembic from backend directory using relative alembic.ini
+    cd backend
     PYTHONPATH="$ROOT_DIR" python -m alembic upgrade head
-    cd ..
+    cd "$ROOT_DIR"
     
     # Step 6: Create/update configuration
     log "6️⃣ Creating system configuration..."
     cat > .system_config <<EOF
 # Integration Server Configuration
-VENV_PATH="$ROOT_DIR/backend/.venv"
+VENV_PATH="$ROOT_DIR/.venv"
 BACKEND_PATH="$ROOT_DIR/backend"
 FRONTEND_PATH="$ROOT_DIR/web"
 PYTHONPATH="$ROOT_DIR"
@@ -139,7 +146,10 @@ start_services() {
     
     # Load configuration
     source .system_config
+    # Export environment variables from .core_env
+    set -a  # automatically export variables
     source .core_env
+    set +a  # stop automatically exporting
     
     # Kill any existing processes
     pkill -f "uvicorn.*backend.main" 2>/dev/null || true
@@ -148,7 +158,7 @@ start_services() {
     
     # Start backend
     log "Starting backend server..."
-    cd "$BACKEND_PATH"
+    cd "$ROOT_DIR"
     source .venv/bin/activate
     
     # Verify dependencies
@@ -156,6 +166,8 @@ start_services() {
         error "boto3 not available - initialization may have failed"
         return 1
     }
+    
+    cd "$BACKEND_PATH"
     
     # Start backend in background
     PYTHONPATH="$PYTHONPATH" python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 > ../logs/backend.log 2>&1 &
@@ -179,7 +191,8 @@ start_services() {
     # Start frontend
     log "Starting frontend server..."
     cd "$FRONTEND_PATH"
-    npm run dev -- --port 5173 --host 0.0.0.0 > ../logs/frontend.log 2>&1 &
+    export PATH="$HOME/.local/share/pnpm:$PATH"
+    pnpm run dev -- --port 5173 --host 0.0.0.0 > ../logs/frontend.log 2>&1 &
     FRONTEND_PID=$!
     
     # Wait for frontend

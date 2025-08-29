@@ -1,3 +1,70 @@
+## 2025-01-29 14:30 - 🔧 CI PIPELINE FIXES AND CHROME AUTOMATION
+
+- **FIXED DATABASE MIGRATION PATH CONFLICTS**: Resolved competing path requirements between CI and scripts:
+  - **UNIFIED APPROACH**: Both CI (startup.py) and scripts now change to backend/ directory before running Alembic
+  - **CONSISTENT BEHAVIOR**: All environments now use `db/migrations` path relative to backend/ directory
+  - **UPDATED TESTS**: Fixed unit tests and integration tests to match new directory-changing behavior
+- **AUTOMATED CHROME INSTALLATION FOR LIGHTHOUSE**: 
+  - **CI PIPELINE**: Added Chrome installation step to GitHub Actions workflow for Lighthouse CI
+  - **LOCAL SCRIPT**: Added `ensure_chrome_for_lighthouse()` function to check_codebase.sh
+  - **AUTO-DETECTION**: Automatically installs Chrome when Lighthouse tests are selected and Chrome is missing
+  - **SILENT INSTALLATION**: Chrome installation runs quietly to avoid cluttering CI output
+- **FIXED LINTING ISSUES**: 
+  - **RUFF COMPLIANCE**: Fixed bare `except` clause in startup.py to use `except Exception`
+  - **TYPE CHECKING**: All MyPy checks now passing with only informational notes
+- **RESOLVED CI TEST FAILURES**: All database-related test failures now resolved with proper migration path handling
+
+## 2025-01-29 14:09 - 🔧 GIT REPOSITORY STABILITY AND VISUALIZATION FIXES
+
+- **FIXED GIT CONFIGURATION ISSUES**: Resolved GPG format error causing Git command failures:
+  - **REMOVED PROBLEMATIC GPG CONFIG**: Eliminated `gpg.format=ssh` causing "unsupported value for gpg.format" errors
+  - **APPLIED CONTAINER-OPTIMIZED GIT CONFIG**: Added performance-tuned Git settings for container environments
+  - **RESTORED GIT GRAPH VISUALIZATION**: Git log with graph display now works perfectly again
+- **RESOLVED GIT PERMISSION CONFLICTS**: Fixed mixed ownership in .git directory:
+  - **UNIFIED OWNERSHIP**: Changed .git directory ownership from root to vscode user
+  - **ELIMINATED PERMISSION ERRORS**: Git operations no longer hang or timeout
+  - **IMPROVED CONTAINER STABILITY**: Git source control integration now stable after devcontainer modifications
+- **ROOT CAUSE IDENTIFIED**: Git instability started after devcontainer.json modifications for EIO fixes
+- **FULL FUNCTIONALITY RESTORED**: All Git operations including status, log, graph visualization working properly
+
+## 2025-01-29 13:16 - 🔧 COMPLETE START/STOP SYSTEM LIFECYCLE IMPLEMENTATION
+
+- **ENHANCED SHUTDOWN SCRIPT**: Fixed `stop_venv_system.sh` to properly stop all services:
+  - **MISSING TOOLS HANDLING**: Robust fallback for missing `lsof`, `fuser`, `ss`, `netstat` commands
+  - **IMPROVED PROCESS DETECTION**: Enhanced pkill patterns to catch all backend/frontend processes
+  - **MULTI-METHOD PORT CHECKING**: Connection test fallback when port checking tools unavailable
+  - **COMPREHENSIVE PROCESS CLEANUP**: Added patterns for multiprocessing workers and pnpm processes
+  - **VERIFIED SHUTDOWN**: Both backend (port 8000) and frontend (port 5173) properly stopped
+- **COMPLETE LIFECYCLE VERIFIED**: Full start/stop cycle tested and working:
+  - ✅ `./smart_start.sh` - Clean startup with smart container restart
+  - ✅ Services operational (backend, frontend, database, Redis)
+  - ✅ `./stop_venv_system.sh` - Clean shutdown with all processes terminated
+  - ✅ Ports properly freed and services fully stopped
+
+## 2025-01-29 13:06 - 🔧 SMART DOCKER CONTAINER RESTART IMPLEMENTATION
+
+- **SMART CONTAINER RESTART LOGIC**: Enhanced `bin/start_core_services.sh` with intelligent container management:
+  - **RESTART-FIRST APPROACH**: Attempts to restart existing stopped containers before recreating
+  - **DATA PRESERVATION**: PostgreSQL database data preserved across container restarts when possible
+  - **GRACEFUL FALLBACK**: Only recreates containers if restart fails or container is corrupted
+  - **AUTOMATIC CONFLICT RESOLUTION**: Eliminates "container name already in use" errors
+- **FIXED DOCKER PERMISSION ISSUES**: Added `vscode` user to `docker` group for seamless container operations
+- **IMPROVED STARTUP RELIABILITY**: `smart_start.sh` now handles container conflicts automatically
+- **PRODUCTION-READY LOGIC**: Both PostgreSQL and Redis containers use consistent restart-first approach
+- **CHANGELOG DOCUMENTATION**: Updated CHANGELOG with comprehensive Docker container management strategy
+
+## 2025-01-29 05:00 - 🏆 COMPLETE DOCKER VOLUME SOLUTION FOR ALL PACKAGE MANAGERS
+
+- **ADDED PYTHON VIRTUAL ENVIRONMENT DOCKER VOLUME**: `gis-python-venv` mount prevents MyPy and pytest corruption
+- **COMPREHENSIVE DOCKER VOLUME STRATEGY**: All package management now uses Docker-managed storage:
+  - `gis-node-modules` → `/workspaces/GenericIntegrationServer/web/node_modules`
+  - `gis-pnpm-store` → `/home/vscode/.local/share/pnpm/store`  
+  - `gis-python-venv` → `/workspaces/GenericIntegrationServer/.venv`
+- **POETRY CONFIGURATION**: `poetry config virtualenvs.in-project true` ensures venv uses Docker volume
+- **OWNERSHIP SEQUENCE**: Fixed timing of all `sudo chown` commands for Docker volume compatibility
+- **COMPLETE WSL2/DOCKER PROTECTION**: All binary files and dependencies protected from filesystem sync issues
+- **BULLETPROOF ENVIRONMENT**: MyPy, pytest, pnpm, npm all resilient to Docker/WSL2 filesystem problems
+
 ## 2025-01-25 (1.6.19) - Complete Virtual Environment System Overhaul + Git Cleanup
 
 ### 🧹 Git Repository Cleanup
@@ -1290,3 +1357,77 @@ Commit message: "Implement API key management system following legacy patterns w
 
 ### Changed
 * `backend/main.py` registers the new Security router.
+
+## 2025-08-26 (1.6.20) - Fixed 500 Authentication Error & Virtual Environment Configuration
+
+### 🔧 Critical Bug Fixes
+- **FIXED 500 Login Error**: Resolved database connection issues causing 500 Internal Server Error during user login
+- **Fixed Virtual Environment Conflicts**: Eliminated dual virtual environment creation that caused configuration mismatches
+- **Fixed Environment Variable Loading**: Backend now properly accesses database connection variables from .core_env
+- **Fixed Alembic Configuration**: Corrected database migration script paths for proper schema setup
+
+### 🏗️ System Architecture Improvements
+- **Consolidated Virtual Environment**: Removed broken backend/.venv, using only root .venv with all dependencies
+- **Updated System Configuration**: All scripts now reference correct virtual environment path
+- **Improved Environment Variable Export**: Proper 'set -a' usage ensures variables are exported to subprocesses
+- **Container Rebuild Compatibility**: Fixed initialization scripts to prevent dual-venv creation after rebuilds
+
+### 📋 Root Cause Analysis
+- **Issue**: Multiple initialization scripts (smart_start.sh, init_system.sh) created conflicting virtual environments
+- **Impact**: Backend couldn't access database due to incomplete venv and missing environment variables
+- **Resolution**: Consolidated to single root .venv with proper environment variable loading
+
+**Commit Message**: "fix: resolve 500 authentication error and virtual environment conflicts"
+
+
+## 2025-08-26 (1.6.21) - Fixed Connector Dependency Loading Architecture
+
+### 🏗️ Major Architecture Fix
+- **FIXED Eager Loading Issue**: Replaced eager loading of all connector dependencies with lazy loading
+- **Fixed Missing Dependencies**: Added missing pyairtable dependency for Airtable connector
+- **Improved Isolation**: Gmail OAuth no longer tries to load Airtable or other unrelated connector dependencies
+- **Enhanced Error Handling**: Missing dependencies for unused connectors no longer break the system
+
+### 🔧 Implementation Details
+- **Lazy Loading Registry**: Destinations only loaded when actually requested, not at startup
+- **Graceful Dependency Handling**: Missing dependencies logged as warnings, don't crash system
+- **Module Mapping**: Explicit connector-to-module mapping for better control
+- **Backward Compatibility**: Existing code continues to work with new lazy loading system
+
+### 📋 Root Cause Analysis
+- **Issue**: Registry eagerly imported ALL connector modules at startup, requiring ALL dependencies
+- **Impact**: Any missing dependency (like pyairtable) would break completely unrelated connectors (like Gmail)
+- **Resolution**: Implemented lazy loading so only used connectors and their dependencies are loaded
+
+**Commit Message**: "refactor: implement lazy loading for connector dependencies to improve isolation"
+
+---
+
+## 2025-01-29 02:15 - 🎉 ALEMBIC MIGRATION SYSTEM FULLY FIXED
+
+### ✅ **CRITICAL SUCCESS**
+- **ALEMBIC MIGRATIONS WORKING**: Fixed all sync vs async driver conflicts - Alembic migrations now execute successfully
+- **DATABASE PROPERLY MIGRATED**: All migrations applied, database at current state `361cbe5331d0 (head)`
+- **BACKEND OPERATIONAL**: API responding with `{"status":"ok"}` and full functionality restored
+- **STARTUP SCRIPTS FIXED**: Both `smart_start.sh` and `simple_start.sh` now work with proper migrations
+
+### 🔧 **ROOT CAUSE RESOLUTION**
+- **Driver Separation**: Fixed `env.py` to use synchronous `psycopg2` while app uses async `asyncpg`
+- **Environment Variable Priority**: Fixed `session.py` to properly respect `DATABASE_URL` environment variable  
+- **Execution Context**: Fixed directory context and `PYTHONPATH` for proper module imports
+- **Database Connection**: Properly configured Docker container IP address for database access
+
+### 📋 **TECHNICAL FIXES IMPLEMENTED**
+- **Modified `backend/db/migrations/env.py`**: Added sync database URL handling with `+asyncpg` removal
+- **Updated `backend/db/session.py`**: Added `DATABASE_URL` environment variable priority over constructed URL
+- **Fixed startup script contexts**: Alembic now runs from `backend/` directory with correct configuration
+- **Resolved import conflicts**: Proper separation of sync migration and async application database handling
+
+### 🎯 **VERIFICATION PASSED**
+- **Manual Testing**: `python -m alembic current` returns proper migration state
+- **Startup Integration**: Migrations run successfully in `smart_start.sh` and `simple_start.sh`
+- **Backend Functionality**: Full API functionality confirmed with health checks passing
+- **Database State**: All schema migrations applied and database operational
+
+**Commit Message**: "fix: completely resolve Alembic migration system with sync/async driver separation and environment variable handling"
+

@@ -2,6 +2,8 @@ import sys
 import types
 import uuid
 
+import pytest
+
 
 class _StubCheckpoint:
 	def __init__(self, val: str):

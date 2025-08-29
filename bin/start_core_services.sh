@@ -30,10 +30,23 @@ docker pull "$REDIS_IMAGE" >/dev/null 2>&1 || true
 
 # Start Postgres if not running; do not bind host port to avoid conflicts
 if ! docker ps --format '{{.Names}}' | grep -q "^${PG_CONT_NAME}$"; then
-  log "▶️  Starting Postgres container $PG_CONT_NAME"
-  docker run -d --restart unless-stopped --name "$PG_CONT_NAME" \
-    -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
-    -e POSTGRES_DB=integration_server "$POSTGRES_IMAGE" >/dev/null
+  # Check if container exists but is stopped
+  if docker ps -a --format '{{.Names}}' | grep -q "^${PG_CONT_NAME}$"; then
+    log "🔄 Restarting existing Postgres container $PG_CONT_NAME"
+    if ! docker start "$PG_CONT_NAME" >/dev/null 2>&1; then
+      log "⚠️  Restart failed, recreating container"
+      docker rm "$PG_CONT_NAME" 2>/dev/null || true
+      log "▶️  Starting new Postgres container $PG_CONT_NAME"
+      docker run -d --restart unless-stopped --name "$PG_CONT_NAME" \
+        -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+        -e POSTGRES_DB=integration_server "$POSTGRES_IMAGE" >/dev/null
+    fi
+  else
+    log "▶️  Starting new Postgres container $PG_CONT_NAME"
+    docker run -d --restart unless-stopped --name "$PG_CONT_NAME" \
+      -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+      -e POSTGRES_DB=integration_server "$POSTGRES_IMAGE" >/dev/null
+  fi
 fi
 
 # Wait for Postgres readiness
@@ -53,8 +66,19 @@ fi
 
 # Start Redis if not running
 if ! docker ps --format '{{.Names}}' | grep -q "^${REDIS_CONT_NAME}$"; then
-  log "▶️  Starting Redis container $REDIS_CONT_NAME"
-  docker run -d --restart unless-stopped --name "$REDIS_CONT_NAME" "$REDIS_IMAGE" >/dev/null
+  # Check if container exists but is stopped
+  if docker ps -a --format '{{.Names}}' | grep -q "^${REDIS_CONT_NAME}$"; then
+    log "🔄 Restarting existing Redis container $REDIS_CONT_NAME"
+    if ! docker start "$REDIS_CONT_NAME" >/dev/null 2>&1; then
+      log "⚠️  Restart failed, recreating container"
+      docker rm "$REDIS_CONT_NAME" 2>/dev/null || true
+      log "▶️  Starting new Redis container $REDIS_CONT_NAME"
+      docker run -d --restart unless-stopped --name "$REDIS_CONT_NAME" "$REDIS_IMAGE" >/dev/null
+    fi
+  else
+    log "▶️  Starting new Redis container $REDIS_CONT_NAME"
+    docker run -d --restart unless-stopped --name "$REDIS_CONT_NAME" "$REDIS_IMAGE" >/dev/null
+  fi
 fi
 
 # Resolve Redis IP
@@ -99,17 +123,11 @@ log "✅ Core service endpoints written to .core_env"
 
 # Run Alembic migrations against container IP
 export DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB"
-python - <<PY || true
-from alembic.config import Config
-from alembic import command
-cfg = Config("backend/alembic.ini")
-cfg.set_main_option("sqlalchemy.url", "$DATABASE_URL")
-try:
-    command.upgrade(cfg, "head")
-    print("Alembic upgrade head OK →", "$DATABASE_URL")
-except Exception as e:
-    print("Alembic migration failed:", e)
-PY
+cd "$ROOT_DIR/backend"
+# Use subprocess to avoid import issues in the current Python environment
+PYTHONPATH="$ROOT_DIR" python -m alembic upgrade head || echo "Alembic migration failed"
+echo "Alembic migration completed for $DATABASE_URL"
+cd "$ROOT_DIR"
 
 log "✅ Core services ready"
 

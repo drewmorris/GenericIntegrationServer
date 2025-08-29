@@ -20,7 +20,7 @@ class TestAuthIntegration:
         with TestClient(app) as client:
             yield client
     
-    def test_signup_basic_flow(self, client):
+    def test_signup_basic_flow(self, integration_client):
         """Test basic signup functionality with real database"""
         import time
         signup_data = {
@@ -29,7 +29,7 @@ class TestAuthIntegration:
             "organization_name": "Integration Test Org"
         }
         
-        response = client.post("/auth/signup", json=signup_data)
+        response = integration_client.post("/auth/signup", json=signup_data)
         
         # Should succeed or fail gracefully (depending on database state)
         assert response.status_code in [200, 400]  # 400 if user already exists
@@ -40,7 +40,7 @@ class TestAuthIntegration:
             assert "refresh_token" in data
             # token_type might not be in response, that's ok for integration test
     
-    def test_login_after_signup(self, client):
+    def test_login_after_signup(self, integration_client):
         """Test login flow after signup"""
         # Use a unique email for this test
         import time
@@ -54,14 +54,14 @@ class TestAuthIntegration:
         }
         
         # First signup (might already exist, that's ok)
-        signup_response = client.post("/auth/signup", json=signup_data)
+        signup_response = integration_client.post("/auth/signup", json=signup_data)
         
         # Then try login
         login_data = {
             "email": email,
             "password": password
         }
-        login_response = client.post("/auth/login", json=login_data)
+        login_response = integration_client.post("/auth/login", json=login_data)
         
         # Login should work if signup succeeded, or if user already existed
         if signup_response.status_code == 200:
@@ -70,42 +70,42 @@ class TestAuthIntegration:
             assert "access_token" in data
             assert "refresh_token" in data
     
-    def test_invalid_login_credentials(self, client):
+    def test_invalid_login_credentials(self, integration_client):
         """Test login with invalid credentials"""
         login_data = {
             "email": "nonexistent@example.com",
             "password": "wrong_password"
         }
         
-        response = client.post("/auth/login", json=login_data)
+        response = integration_client.post("/auth/login", json=login_data)
         assert response.status_code == 401
     
-    def test_malformed_requests(self, client):
+    def test_malformed_requests(self, integration_client):
         """Test handling of malformed requests"""
         # Signup with missing fields
         incomplete_data = {"email": "test@example.com"}  # Missing password
-        response = client.post("/auth/signup", json=incomplete_data)
+        response = integration_client.post("/auth/signup", json=incomplete_data)
         assert response.status_code == 422
         
-        # Login with missing fields
+        # Login with missing fields  
         incomplete_login = {"email": "test@example.com"}  # Missing password
-        response = client.post("/auth/login", json=incomplete_login)
+        response = integration_client.post("/auth/login", json=incomplete_login)
         assert response.status_code == 422
     
-    def test_unauthorized_access(self, client):
+    def test_unauthorized_access(self, integration_client):
         """Test that protected endpoints require authentication"""
         # Try to access /me without token
-        me_response = client.get("/auth/me")
+        me_response = integration_client.get("/auth/me")
         assert me_response.status_code == 401
         
         # Try to access /me with invalid token
         headers = {"Authorization": "Bearer invalid_token"}
-        me_response = client.get("/auth/me", headers=headers)
+        me_response = integration_client.get("/auth/me", headers=headers)
         assert me_response.status_code == 401
     
-    def test_app_starts_successfully(self, client):
+    def test_app_starts_successfully(self, integration_client):
         """Test that the application starts and basic endpoints are reachable"""
         # This should always work regardless of database state
         # Test some basic endpoint that doesn't require auth
-        response = client.get("/docs")  # OpenAPI docs should be available
+        response = integration_client.get("/docs")  # OpenAPI docs should be available
         assert response.status_code == 200

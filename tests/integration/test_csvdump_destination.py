@@ -2,6 +2,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
+import pytest
+
 
 def test_csvdump_writes_file(client):
 	"""Test that CSV dump destination writes files via API."""

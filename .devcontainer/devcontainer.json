@@ -4,15 +4,27 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-"postCreateCommand": "bash -c 'set -e; if command -v poetry >/dev/null 2>&1; then poetry install --no-root --with dev; else pip install -e .; fi; if [ -f web/package-lock.json ]; then (cd web && npm ci); else (cd web && npm install); fi'",
   "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "type=volume,source=gis-node-modules,target=${containerWorkspaceFolder}/web/node_modules",
+    "type=volume,source=gis-pnpm-store,target=/home/vscode/.local/share/pnpm/store",
+    "type=volume,source=gis-python-venv,target=${containerWorkspaceFolder}/.venv"
   ],
+  "remoteEnv": {
+    "PNPM_HOME": "/home/vscode/.local/share/pnpm",
+    "PATH": "/home/vscode/.local/share/pnpm:${containerEnv:PATH}",
+    "SHELL": "/bin/bash"
+  },
+  "postCreateCommand": "bash -c 'set -e; sudo chown -R vscode:vscode /workspaces/GenericIntegrationServer/.venv && if command -v poetry >/dev/null 2>&1; then poetry config virtualenvs.in-project true && poetry install --no-root --with dev; else pip install -e .; fi; mkdir -p /home/vscode/.local/share/pnpm && sudo chown -R vscode:vscode /home/vscode/.local/share/pnpm && export SHELL=/bin/bash && curl -fsSL https://get.pnpm.io/install.sh | sh - && export PATH=\"/home/vscode/.local/share/pnpm:$PATH\" && sudo chown -R vscode:vscode /workspaces/GenericIntegrationServer/web/node_modules && cd web && pnpm install --no-verify-store-integrity'",
   "customizations": {
     "vscode": {
       "settings": {
         "python.formatting.provider": "black",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "files.watcherExclude": {
+          "**/web/node_modules/**": true,
+          "**/.venv/**": true
+        }
       },
       "extensions": [
         "ms-python.python",
@@ -28,4 +40,4 @@
     6379
   ],
   "remoteUser": "vscode"
-} 
+}

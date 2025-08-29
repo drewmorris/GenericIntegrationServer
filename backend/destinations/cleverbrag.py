@@ -17,6 +17,7 @@ class CleverBragDestination(DestinationBase):
     name = "cleverbrag"
 
     def __init__(self) -> None:
+        super().__init__()  # Initialize base class attributes
         self.default_base_url = os.getenv("CLEVERBRAG_BASE_URL", "https://api.cleverbrag.cleverthis.com")
 
     async def send(self, *, payload: Iterable[Dict[str, Any]], profile_config: dict[str, Any]) -> None:  # noqa: D401

@@ -28,16 +28,19 @@ bash bin/start_core_services.sh || {
 
 # Step 3: Create and set up virtual environment
 log "3️⃣ Setting up Python virtual environment..."
-cd backend
 
-# Remove any existing virtual environment
+# Remove any existing virtual environments (avoid dual-venv issue)
 if [[ -d .venv ]]; then
-    log "Removing existing virtual environment..."
+    log "Removing existing root virtual environment..."
     rm -rf .venv
 fi
+if [[ -d backend/.venv ]]; then
+    log "Removing existing backend virtual environment..."
+    rm -rf backend/.venv
+fi
 
-# Create new virtual environment
-log "Creating new virtual environment..."
+# Create new virtual environment in root directory
+log "Creating new virtual environment in root directory..."
 python3 -m venv .venv
 
 # Activate virtual environment
@@ -108,4 +111,5 @@ log "Next steps:"
 log "1. Run: ./start_venv_system.sh"
 log "2. Open: http://localhost:5173"
 log "3. Test Gmail connector (boto3 is now available!)"
+
 

@@ -2,6 +2,9 @@ import uuid
 from datetime import datetime, timedelta
 
 
+import pytest
+
+
 def test_scheduler_enqueues_and_creates_sync_run(client):
     """Test that scheduler can enqueue sync runs via API."""
     # Create a profile that should be due for sync

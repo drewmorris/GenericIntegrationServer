@@ -40,9 +40,18 @@ async def test_rls_isolation() -> None:  # noqa: D401
         async_url = re.sub(r"^postgresql(\+[A-Za-z0-9_]+)?://", "postgresql+asyncpg://", sync_url)
 
         # run migrations
-        alembic_cfg = Config("backend/alembic.ini")
+        # Change to backend directory to match our startup behavior
+        import os
+        original_cwd = os.getcwd()
+        backend_dir = os.path.join(original_cwd, "backend")
+        os.chdir(backend_dir)
+        alembic_cfg = Config("alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
-        command.upgrade(alembic_cfg, "head")
+        try:
+            command.upgrade(alembic_cfg, "head")
+        finally:
+            # Restore original directory
+            os.chdir(original_cwd)
 
         # Main engine as superuser (for setup)
         engine = create_async_engine(async_url, future=True)

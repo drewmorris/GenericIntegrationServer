@@ -86,3 +86,16 @@ log "   ./start_venv_system.sh  - Start all services"
 log "   ./stop_venv_system.sh   - Stop all services"
 log "   ./status_system.sh      - Show this status"
 
+
+
+
+
+
+
+
+
+
+
+
+
+

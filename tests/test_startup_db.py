@@ -190,7 +190,7 @@ class TestRunMigrations:
         
         _run_migrations()
         
-        mock_config_class.assert_called_once_with("backend/alembic.ini")
+        mock_config_class.assert_called_once_with("alembic.ini")
         mock_config.set_main_option.assert_called_once_with(
             "sqlalchemy.url", "postgresql://user:pass@host:5432/db"
         )
@@ -209,7 +209,7 @@ class TestRunMigrations:
         with pytest.raises(Exception, match="Migration failed"):
             _run_migrations()
         
-        mock_config_class.assert_called_once_with("backend/alembic.ini")
+        mock_config_class.assert_called_once_with("alembic.ini")
         mock_config.set_main_option.assert_called_once()
         mock_command.upgrade.assert_called_once_with(mock_config, "head")
     
@@ -224,7 +224,7 @@ class TestRunMigrations:
         with pytest.raises(Exception, match="Config failed"):
             _run_migrations()
         
-        mock_config_class.assert_called_once_with("backend/alembic.ini")
+        mock_config_class.assert_called_once_with("alembic.ini")
         mock_command.upgrade.assert_not_called()
 
 

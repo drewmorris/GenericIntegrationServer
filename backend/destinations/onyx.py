@@ -17,6 +17,7 @@ class OnyxDestination(DestinationBase):
     name = "onyx"
 
     def __init__(self) -> None:
+        super().__init__()  # Initialize base class attributes
         self.default_base_url = os.getenv("ONYX_BASE_URL", "https://api.onyx.com")
 
     async def send(self, *, payload: Iterable[Dict[str, Any]], profile_config: dict[str, Any]) -> None:  # noqa: D401

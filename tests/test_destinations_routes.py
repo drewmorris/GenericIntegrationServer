@@ -43,7 +43,8 @@ class TestDestinationsRoutes:
             "webhook": mock_dest2
         }
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         assert len(result) == 2
@@ -68,9 +69,8 @@ class TestDestinationsRoutes:
     @pytest.mark.asyncio
     async def test_list_destination_definitions_empty_registry(self):
         """Test destination definitions listing with empty registry"""
-        mock_registry = {}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=[]):
             result = await list_destination_definitions()
         
         assert result == []
@@ -91,7 +91,8 @@ class TestDestinationsRoutes:
         
         mock_registry = {"single_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         assert len(result) == 1
@@ -135,7 +136,8 @@ class TestDestinationsRoutes:
         
         mock_registry = {"complex_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         assert len(result) == 1
@@ -153,20 +155,21 @@ class TestDestinationsRoutes:
     
     @pytest.mark.asyncio
     async def test_list_destination_definitions_destination_instantiation_error(self):
-        """Test when destination class instantiation fails"""
+        """Test when destination class instantiation fails - should be gracefully handled"""
         mock_dest = MagicMock()
         mock_dest.side_effect = Exception("Instantiation failed")
         
         mock_registry = {"failing_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
-            # The function should propagate the exception
-            with pytest.raises(Exception, match="Instantiation failed"):
-                await list_destination_definitions()
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
+            # The function should gracefully handle the exception and return empty list
+            result = await list_destination_definitions()
+            assert result == []  # Should return empty list when all destinations fail
     
     @pytest.mark.asyncio
     async def test_list_destination_definitions_config_schema_error(self):
-        """Test when config_schema method fails"""
+        """Test when config_schema method fails - should be gracefully handled"""
         mock_dest = MagicMock()
         mock_dest_instance = MagicMock()
         mock_dest_instance.config_schema.side_effect = Exception("Schema generation failed")
@@ -174,14 +177,15 @@ class TestDestinationsRoutes:
         
         mock_registry = {"schema_failing_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
-            # The function should propagate the exception
-            with pytest.raises(Exception, match="Schema generation failed"):
-                await list_destination_definitions()
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
+            # The function should gracefully handle the exception and return empty list
+            result = await list_destination_definitions()
+            assert result == []  # Should return empty list when schema generation fails
     
     @pytest.mark.asyncio
     async def test_list_destination_definitions_mixed_success_and_failure(self):
-        """Test with mix of working and failing destinations"""
+        """Test with mix of working and failing destinations - should return only working ones"""
         # Working destination
         mock_dest1 = MagicMock()
         mock_dest1_instance = MagicMock()
@@ -197,10 +201,13 @@ class TestDestinationsRoutes:
             "failing_dest": mock_dest2
         }
         
-        with patch('backend.routes.destinations.registry', mock_registry):
-            # Should fail on the first failing destination
-            with pytest.raises(Exception, match="Failed to instantiate"):
-                await list_destination_definitions()
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
+            # Should return only the working destination, skip the failing one
+            result = await list_destination_definitions()
+            assert len(result) == 1
+            assert result[0]["name"] == "working_dest"
+            assert result[0]["schema"] == {"type": "object"}
     
     @pytest.mark.asyncio
     async def test_list_destination_definitions_return_type(self):
@@ -212,7 +219,8 @@ class TestDestinationsRoutes:
         
         mock_registry = {"test_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         # Should return a list
@@ -239,7 +247,8 @@ class TestDestinationsRoutesEdgeCases:
         
         mock_registry = {"none_schema_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         assert len(result) == 1
@@ -256,7 +265,8 @@ class TestDestinationsRoutesEdgeCases:
         
         mock_registry = {"empty_schema_dest": mock_dest}
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         assert len(result) == 1
@@ -280,7 +290,8 @@ class TestDestinationsRoutesEdgeCases:
             "123numeric": mock_dest
         }
         
-        with patch('backend.routes.destinations.registry', mock_registry):
+        with patch('backend.routes.destinations.list_available_destinations', return_value=list(mock_registry.keys())), \
+             patch('backend.routes.destinations.get_destination', side_effect=lambda name: mock_registry[name]):
             result = await list_destination_definitions()
         
         assert len(result) == 5

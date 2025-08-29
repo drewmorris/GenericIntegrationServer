@@ -1,0 +1,34 @@
+# Container-optimized Git configuration
+# This helps prevent Git performance issues in containerized environments
+
+[core]
+    # Prevent permission issues
+    filemode = false
+    # Optimize for container filesystems
+    preloadindex = true
+    fscache = true
+    
+[gc]
+    # Reduce automatic garbage collection to prevent I/O spikes
+    auto = 0
+    
+[status]
+    # Show untracked files more efficiently  
+    showUntrackedFiles = normal
+    
+[diff]
+    # Optimize diff performance
+    renames = true
+    
+[pack]
+    # Optimize pack file handling
+    packSizeLimit = 2g
+    
+[index]
+    # Optimize index operations
+    version = 4
+    
+[feature]
+    # Enable modern Git features for better performance
+    manyFiles = true
+

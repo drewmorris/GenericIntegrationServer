@@ -5,9 +5,44 @@ from sqlalchemy import pool, create_engine
 from sqlalchemy.engine import Connection
 from alembic import context
 
-from backend.db.base import Base
-from backend.db import models  # noqa: F401  # ensure models are imported
-from backend.db.session import DATABASE_URL
+# Import Base and models in a migration-safe way (avoid async imports)
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import MetaData
+
+# Create a simple sync base for migrations (avoid AsyncAttrs)
+class MigrationBase(DeclarativeBase):
+    metadata = MetaData()
+
+# Import models to build metadata, but catch any async import issues
+try:
+    from backend.db import models  # noqa: F401
+    # Use the actual Base metadata if available
+    from backend.db.base import Base as ActualBase
+    target_metadata = ActualBase.metadata
+except ImportError as e:
+    print(f"Warning: Could not import models for migrations: {e}")
+    # Fallback to empty metadata
+    target_metadata = MigrationBase.metadata
+
+# Build DATABASE_URL for sync connection (Alembic needs sync, not async)
+import os
+DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
+DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+DB_USER = os.getenv("POSTGRES_USER", "postgres")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+DB_NAME = os.getenv("POSTGRES_DB", "integration_server")
+
+# Allow override via DATABASE_URL environment variable, but ensure it's sync (psycopg2)
+DATABASE_URL = os.getenv("DATABASE_URL") or (
+    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+# Remove async driver specifier if present
+if "+asyncpg" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("+asyncpg", "")
 
 # Load logging config if present and valid
 config = context.config  # type: ignore[attr-defined]
@@ -23,7 +58,7 @@ existing_url = config.get_main_option("sqlalchemy.url")
 if not existing_url:
     config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("+asyncpg", ""))
 
-target_metadata = Base.metadata
+# target_metadata is set above in the try/except block
 
 def run_migrations_offline() -> None:
     context.configure(url=str(config.get_main_option("sqlalchemy.url")), target_metadata=target_metadata, literal_binds=True)

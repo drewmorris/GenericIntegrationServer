@@ -44,6 +44,28 @@ done
 # Helper: log
 log() { echo -e "\033[1;36m$*\033[0m"; }
 
+# Function to check and install Chrome for Lighthouse if needed
+ensure_chrome_for_lighthouse() {
+  if [[ "$NO_WEB_CHECKS" == "true" ]]; then
+    return 0
+  fi
+  
+  if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+    log "Installing Chrome for Lighthouse CI..."
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update >/dev/null 2>&1 || true
+      sudo apt-get install -y wget gnupg >/dev/null 2>&1 || true
+      wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1 || true
+      echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null 2>&1 || true
+      sudo apt-get update >/dev/null 2>&1 || true
+      sudo apt-get install -y google-chrome-stable >/dev/null 2>&1 || true
+      log "✅ Chrome installed for Lighthouse"
+    else
+      log "⚠️  Could not install Chrome automatically - Lighthouse tests may fail"
+    fi
+  fi
+}
+
 # Ensure Docker/act access if needed
 if [[ "$RUN_GH" == true || "$CI_EMULATE" == true ]]; then
   if [[ -x "$ROOT_DIR/bin/setup_docker_access.sh" ]]; then
@@ -217,12 +239,12 @@ commands=(
   "poetry run ruff check ." 
   "poetry run mypy backend" 
   "$PYTEST_CMD" 
-  "command -v npm >/dev/null && npm --prefix web run format:check --silent" 
-  "command -v npm >/dev/null && npm --prefix web run biome:check" 
-  "command -v npm >/dev/null && npm --prefix web run tsc:check" 
-  "command -v npm >/dev/null && npm --prefix web run test:all" 
-  "command -v npm >/dev/null && npm --prefix web run build"
-  "command -v npm >/dev/null && npm --prefix web run performance:test"
+  "command -v pnpm >/dev/null && pnpm --prefix web run format:check --silent" 
+  "command -v pnpm >/dev/null && pnpm --prefix web run biome:check" 
+  "command -v pnpm >/dev/null && pnpm --prefix web run tsc:check" 
+  "command -v pnpm >/dev/null && pnpm --prefix web run test:all" 
+  "command -v pnpm >/dev/null && pnpm --prefix web run build"
+  "command -v pnpm >/dev/null && pnpm --prefix web run performance:test"
 )
 
 labels=(
@@ -252,8 +274,8 @@ if [[ "${1:-}" != "--ci" && "$CI_EMULATE" != true && "$RUN_GH" != true ]]; then
     # Show fix sub-menu
     fix_cmds=(
       "poetry run ruff check --fix ." 
-      "command -v npm >/dev/null && npm --prefix web run format --silent" 
-      "command -v npm >/dev/null && npm --prefix web run biome:fix"
+      "command -v pnpm >/dev/null && pnpm --prefix web run format --silent" 
+      "command -v pnpm >/dev/null && pnpm --prefix web run biome:fix"
       "poetry run mypy backend --install-types --non-interactive"
     )
     fix_labels=(
@@ -365,10 +387,10 @@ fi
 
 # Helper: start web dev server for Lighthouse tests
 start_web_server() {
-  if command -v npm >/dev/null && [[ -d "web" ]]; then
+  if command -v pnpm >/dev/null && [[ -d "web" ]]; then
     log "🌐 Starting web dev server for Lighthouse tests..."
     cd web
-    npm run dev &
+    pnpm run dev &
     WEB_SERVER_PID=$!
     cd ..
     
@@ -391,7 +413,20 @@ start_web_server() {
 stop_web_server() {
   if [[ -n "${WEB_SERVER_PID:-}" ]]; then
     log "🛑 Stopping web dev server (PID: $WEB_SERVER_PID)"
-    kill $WEB_SERVER_PID 2>/dev/null || true
+    
+    # Kill the process group to ensure all child processes are terminated
+    kill -TERM -$WEB_SERVER_PID 2>/dev/null || true
+    
+    # Wait a bit for graceful shutdown
+    sleep 2
+    
+    # Force kill any remaining processes if they're still running
+    kill -KILL -$WEB_SERVER_PID 2>/dev/null || true
+    
+    # Also kill any remaining vite/esbuild processes by name
+    pkill -f "vite.*dev" 2>/dev/null || true
+    pkill -f "esbuild.*service" 2>/dev/null || true
+    
     wait $WEB_SERVER_PID 2>/dev/null || true
     unset WEB_SERVER_PID
   fi
@@ -403,6 +438,7 @@ for i in "${selected_indices[@]}"; do
   label="${labels[$i]}"
   if [[ "$label" == *"Lighthouse"* ]]; then
     WEB_SERVER_NEEDED=true
+    ensure_chrome_for_lighthouse
     break
   fi
 done
@@ -442,7 +478,7 @@ for i in "${selected_indices[@]}"; do
     # Special handling for Lighthouse tests
     echo "   → running Lighthouse against http://localhost:5173"
     cd web
-    bash -c "${cmd#*npm --prefix web run }" 2>&1 | tee "../$log"
+    bash -c "${cmd#*pnpm --prefix web run }" 2>&1 | tee "../$log"
     status=$?
     cd ..
   else

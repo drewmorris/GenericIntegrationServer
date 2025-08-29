@@ -74,8 +74,16 @@ def _run_migrations() -> None:
     logging.getLogger("alembic").setLevel(logging.WARNING)
     
     try:
-        # Create Alembic configuration
-        cfg = Config("backend/alembic.ini")
+        # Save current directory
+        import os
+        original_cwd = os.getcwd()
+        
+        # Change to backend directory to match script behavior
+        backend_dir = os.path.join(original_cwd, "backend")
+        os.chdir(backend_dir)
+        
+        # Create Alembic configuration (now from backend directory)
+        cfg = Config("alembic.ini")
         cfg.set_main_option("sqlalchemy.url", database_url)
         
         # Run migrations
@@ -86,5 +94,10 @@ def _run_migrations() -> None:
         logger.error(f"❌ Database migration failed: {e}")
         raise
     finally:
+        # Restore original directory
+        try:
+            os.chdir(original_cwd)
+        except Exception:
+            pass
         # Restore alembic logging
         logging.getLogger("alembic").setLevel(logging.INFO)

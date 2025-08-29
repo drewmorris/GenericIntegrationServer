@@ -1204,6 +1204,18 @@ files = [
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
 [[package]]
+name = "inflection"
+version = "0.5.1"
+description = "A port of Ruby on Rails inflector to Python"
+optional = false
+python-versions = ">=3.5"
+groups = ["main"]
+files = [
+    {file = "inflection-0.5.1-py2.py3-none-any.whl", hash = "sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2"},
+    {file = "inflection-0.5.1.tar.gz", hash = "sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417"},
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.1.0"
 description = "brain-dead simple config-ini parsing"
@@ -1680,6 +1692,25 @@ files = [
     {file = "psycopg2_binary-2.9.10-cp39-cp39-win32.whl", hash = "sha256:3216ccf953b3f267691c90c6fe742e45d890d8272326b4a8b20850a03d05b7b8"},
     {file = "psycopg2_binary-2.9.10-cp39-cp39-win_amd64.whl", hash = "sha256:30e34c4e97964805f715206c7b789d54a78b70f3ff19fbe590104b71c45600e5"},
 ]
+
+[[package]]
+name = "pyairtable"
+version = "2.3.7"
+description = "Python Client for the Airtable API"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "pyairtable-2.3.7-py2.py3-none-any.whl", hash = "sha256:cd1651355774c1212e618f3407b3b3bf51640438f5db22f436f689898011d71c"},
+    {file = "pyairtable-2.3.7.tar.gz", hash = "sha256:2afd6f095bce99f1114c36bf729e80ced3d3f4235325db0d32f53a87078ba04b"},
+]
+
+[package.dependencies]
+inflection = "*"
+pydantic = "*"
+requests = ">=2.22.0"
+typing-extensions = "*"
+urllib3 = ">=1.26"
 
 [[package]]
 name = "pyasn1"
@@ -2909,4 +2940,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "27ef2a4dbc01513cda3234ea05e0f45f864c8c14e63d008c274e78b80cf8de2b"
+content-hash = "b8fa6c5e9e911290a9bc980ea29f238115919bf26ba0b3942bfd6e92db2f06ad"

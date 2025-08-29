@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from backend.destinations import registry, get_destination
+from backend.destinations import get_destination, get_registry, list_available_destinations, registry
 from backend.db.session import get_db
 from backend.db import models as m
 from backend.deps import get_current_org_id
@@ -18,10 +18,18 @@ router = APIRouter(prefix="/destinations", tags=["Destinations"])
 )
 async def list_destination_definitions() -> list[dict]:
     defs = []
-    for name, cls in registry.items():
-        inst = cls()
-        schema = inst.config_schema()
-        defs.append({"name": name, "schema": schema})
+    # Use lazy loading - only loads destinations that are actually available
+    available_destinations = list_available_destinations()
+    for name in available_destinations:
+        try:
+            cls = get_destination(name)
+            inst = cls()
+            schema = inst.config_schema()
+            defs.append({"name": name, "schema": schema})
+        except Exception as e:
+            # Skip destinations that can't be loaded (missing dependencies)
+            print(f"⚠️  Skipping destination '{name}' in definitions: {e}")
+            continue
     return defs
 
 @router.get(

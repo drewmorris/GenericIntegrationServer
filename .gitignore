@@ -24,6 +24,7 @@ web/node_modules/
 web/dist/
 /web/node_modules/
 node_modules/
+.pnpm-store/
 
 # Coverage reports
 coverage/
@@ -41,6 +42,7 @@ LegacyCode/web/public/Microsoft.svg
 .system_pids
 .actrc
 .docker_env
+.simple_pids
 purge-env.ps1
 backend/__pycache__/deps.cpython-311.pyc
 backend/__pycache__/main.cpython-311.pyc

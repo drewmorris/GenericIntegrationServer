@@ -53,10 +53,10 @@ source .core_env
 
 # Step 5: Start backend with virtual environment
 log "4️⃣ Starting backend server with virtual environment..."
-cd "$BACKEND_PATH"
 
-# Activate virtual environment and start backend
-source .venv/bin/activate
+# Activate virtual environment from root directory
+source "$VENV_PATH/bin/activate"
+cd "$BACKEND_PATH"
 
 # Verify boto3 is available
 python -c "import boto3; print('✅ boto3 available:', boto3.__version__)" || {
@@ -142,4 +142,5 @@ FRONTEND_PID=$FRONTEND_PID
 EOF
 
 log "✅ System is running (PIDs saved for cleanup)"
+
 

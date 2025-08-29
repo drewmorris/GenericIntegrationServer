@@ -35,6 +35,7 @@ boto3 = "^1.34.0"  # Required by BlobStorageConnector (S3, R2, GCS, OCI)
 google-api-python-client = "^2.0.0"  # Required by Gmail, Drive, Sites connectors
 google-auth = "^2.0.0"  # Required by Google connectors
 google-auth-oauthlib = "^1.0.0"  # Required by Google OAuth connectors
+pyairtable = "^2.0.0"  # Required by Airtable connector
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"

@@ -19,6 +19,7 @@ class CsvDumpDestination(DestinationBase):
     name = "csvdump"
 
     def __init__(self) -> None:
+        super().__init__()  # Initialize base class attributes  
         self.dump_dir = Path(os.getenv("CSV_DUMP_DIR", "./csv_dumps"))
         self.dump_dir.mkdir(parents=True, exist_ok=True)
 

@@ -70,6 +70,47 @@ def integration_client():
         yield client
 
 
+@pytest.fixture
+def authenticated_integration_client(integration_client):
+    """Create an integration client with real authentication for end-to-end tests."""
+    import time
+    
+    # Create a unique test user
+    unique_email = f"integration_test_{int(time.time())}@example.com"
+    signup_data = {
+        "email": unique_email,
+        "password": "test_password_123",
+        "organization_name": "Integration Test Org"
+    }
+    
+    # Sign up to get real auth tokens
+    signup_response = integration_client.post("/auth/signup", json=signup_data)
+    
+    if signup_response.status_code == 200:
+        token_data = signup_response.json()
+        access_token = token_data["access_token"]
+        
+        # Set authorization header on the client
+        integration_client.headers.update({"Authorization": f"Bearer {access_token}"})
+        
+        return integration_client
+    else:
+        # If signup fails, try login with a test user that might already exist
+        login_data = {"email": unique_email, "password": "test_password_123"}
+        login_response = integration_client.post("/auth/login", json=login_data)
+        
+        if login_response.status_code == 200:
+            token_data = login_response.json()
+            access_token = token_data["access_token"]
+            integration_client.headers.update({"Authorization": f"Bearer {access_token}"})
+            return integration_client
+        else:
+            raise Exception(f"Failed to authenticate test user: signup={signup_response.status_code}, login={login_response.status_code}")
+
+
+
+
+
 # Pytest configuration
 def pytest_configure(config):
     """Configure pytest with custom markers."""
@@ -99,7 +140,7 @@ def pytest_collection_modifyitems(config, items):
 def setup_test_environment():
     """Set up test environment variables."""
     test_env = {
-        "TESTING": "true",
+        "TESTING": "1",
         "LOG_LEVEL": "WARNING",
     }
     

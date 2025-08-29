@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_checkpoint_persisted(client, test_org_user_ids):
     """Test that checkpoint data is persisted after sync via API."""
     # Use sample org and user IDs from fixture
